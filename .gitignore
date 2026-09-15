@@ -1,0 +1,30 @@
+# Unity generated folders
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+
+# IDE and editor caches
+/.vs/
+/.idea/
+*.suo
+*.user
+*.userprefs
+
+# Generated Unity and Visual Studio project files
+*.csproj
+*.unityproj
+*.sln
+*.tmp
+ExportedObj/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Keep Unity asset metadata when the corresponding asset is tracked
+!/[Aa]ssets/**/*.meta
