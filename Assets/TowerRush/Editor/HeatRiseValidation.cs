@@ -136,6 +136,7 @@ namespace HeatRise.Editor
                     && menu.transport == network.NetworkConfig.NetworkTransport, "LAN transport/menu references invalid.");
                 Require(network.NetworkConfig.ConnectionApproval && network.NetworkConfig.EnableSceneManagement,
                     "Connection approval and scene management required.");
+                Require(network.NetworkConfig.TickRate == 60, "LAN requires a 60 Hz network tick.");
                 Require(race.GetComponent<NetworkObject>() != null && race.spawnPoints.Length == 4
                     && race.spawnPoints.All(p => p != null), "Race network object/four starts missing.");
                 Require(new HashSet<HeavyBlock>(race.blocks).SetEquals(blocks), "Network block registry differs from scene.");
@@ -146,6 +147,8 @@ namespace HeatRise.Editor
                 ValidatePlayer(prefab.GetComponent<PlayerController>(), false);
                 Require(prefab.GetComponent<NetworkPlayer>() != null && prefab.GetComponent<NetworkObject>() != null
                     && prefab.GetComponent<NetworkTransform>() != null, "Network player components missing.");
+                NetworkTransform sync = prefab.GetComponent<NetworkTransform>();
+                Require(sync.Interpolate && sync.UseUnreliableDeltas, "LAN movement requires interpolated unreliable deltas.");
             }
             else
             {

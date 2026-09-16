@@ -28,8 +28,11 @@ namespace HeatRise
         Renderer[] modelRenderers;
         MaterialPropertyBlock modelProperties;
         Vector3 direction;
+        Vector3 sentDirection;
         byte actions;
-        byte pendingActions;
+        uint inputSequence;
+        uint receivedSequence;
+        bool hasReceivedInput;
         float lastInput;
         float nextInput;
         float nextTimers;
@@ -88,15 +91,8 @@ namespace HeatRise
             {
                 bool allow = Alive.Value && NetworkRace.Instance.Racing
                     && !GameManager.Instance.MenuOpen && Application.isFocused;
-                pendingActions |= allow ? PlayerController.ReadActions() : (byte)0;
-                if (!allow) pendingActions = 0;
-                if (Time.unscaledTime >= nextInput)
-                {
-                    Vector3 input = allow ? Player.ReadDirection() : Vector3.zero;
-                    InputRpc(input, pendingActions);
-                    pendingActions = 0;
-                    nextInput = Time.unscaledTime + 1f / 30f;
-                }
+                SendInput(allow ? Player.ReadDirection() : Vector3.zero,
+                    allow ? PlayerController.ReadActions() : (byte)0);
             }
             if (IsServer && Time.unscaledTime >= nextTimers)
             {
@@ -112,17 +108,51 @@ namespace HeatRise
             SavedCheckpointOrder.Value = Player.CheckpointOrder;
         }
 
-        [Rpc(SendTo.Server, RequireOwnership = true)]
-        void InputRpc(Vector3 input, byte buttons, RpcParams rpc = default)
+        void SendInput(Vector3 input, byte buttons)
         {
-            if (rpc.Receive.SenderClientId != OwnerClientId || !Alive.Value
+            if (IsServer)
+            {
+                ReceiveInput(input, buttons, ++inputSequence, OwnerClientId);
+                return;
+            }
+            if (buttons == 0 && input == sentDirection && Time.unscaledTime < nextInput) return;
+            if (buttons != 0) InputActionsRpc(input, buttons, ++inputSequence);
+            else InputDirectionRpc(input, ++inputSequence);
+            sentDirection = input;
+            nextInput = Time.unscaledTime + 1f / NetworkManager.NetworkConfig.TickRate;
+        }
+
+        [Rpc(SendTo.Server, RequireOwnership = true, Delivery = RpcDelivery.Unreliable)]
+        void InputDirectionRpc(Vector3 input, uint sequence, RpcParams rpc = default)
+        {
+            ReceiveInput(input, 0, sequence, rpc.Receive.SenderClientId);
+        }
+
+        [Rpc(SendTo.Server, RequireOwnership = true)]
+        void InputActionsRpc(Vector3 input, byte buttons, uint sequence, RpcParams rpc = default)
+        {
+            ReceiveInput(input, (byte)(buttons & 31), sequence, rpc.Receive.SenderClientId);
+        }
+
+        void ReceiveInput(Vector3 input, byte buttons, uint sequence, ulong sender)
+        {
+            if (sender != OwnerClientId || !Alive.Value
                 || !NetworkRace.Instance.Racing) return;
             if (float.IsNaN(input.x) || float.IsNaN(input.z)
                 || float.IsInfinity(input.x) || float.IsInfinity(input.z)) return;
-            input.y = 0f;
-            direction = Vector3.ClampMagnitude(input, 1f);
-            actions |= (byte)(buttons & 31);
-            lastInput = Time.unscaledTime;
+            if (!hasReceivedInput || unchecked((int)(sequence - receivedSequence)) > 0)
+            {
+                hasReceivedInput = true;
+                receivedSequence = sequence;
+                input.y = 0f;
+                direction = Vector3.ClampMagnitude(input, 1f);
+                lastInput = Time.unscaledTime;
+            }
+            if (buttons != 0)
+            {
+                actions |= buttons;
+                lastInput = Time.unscaledTime;
+            }
         }
 
         public byte ConsumeActions()
@@ -161,7 +191,7 @@ namespace HeatRise
             if (!IsServer || !Alive.Value || !NetworkRace.Instance.Racing) return;
             Cause.Value = Form.Value = 0;
             direction = Vector3.zero;
-            actions = pendingActions = 0;
+            actions = 0;
             Player.ResetState(position, false);
             PublishState();
             transform.rotation = rotation;
@@ -175,7 +205,7 @@ namespace HeatRise
             Alive.Value = true;
             Cause.Value = Form.Value = 0;
             direction = Vector3.zero;
-            actions = pendingActions = 0;
+            actions = 0;
             Player.ResetState(position);
             PublishState();
             networkTransform.Teleport(position, Quaternion.identity, Vector3.one);
