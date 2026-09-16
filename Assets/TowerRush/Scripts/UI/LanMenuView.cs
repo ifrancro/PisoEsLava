@@ -1,0 +1,235 @@
+using System.Collections;
+using System.Net;
+using System.Net.Sockets;
+using HeatRise;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace HeatRise.UI
+{
+    /// uGUI presentation for the pre-connect LAN menu screen (title/solo/host/join). Pure view: all
+    /// networking stays in <see cref="LanMenu"/>. Hidden once a connection is established, handing
+    /// off to the existing IMGUI lobby/race HUD.
+    public sealed class LanMenuView : MonoBehaviour
+    {
+        enum IpStatus { Idle, Checking, Valid, Invalid }
+
+        [Header("Wiring")]
+        public LanMenu lanMenu;
+        public GameObject menuRoot;
+        public MeltTransition melt;
+
+        [Header("Entrance cascade")]
+        public RectTransform title;
+        public CanvasGroup titleGroup;
+        public RectTransform subtitle;
+        public CanvasGroup subtitleGroup;
+        public RectTransform hostBlock;
+        public CanvasGroup hostBlockGroup;
+        public RectTransform joinBlock;
+        public CanvasGroup joinBlockGroup;
+
+        [Header("Solo")]
+        public Button soloButton;
+
+        [Header("Host")]
+        public Button hostButton;
+        public Image hostButtonFill;
+        public AccordionPanel hostPanel;
+        public TMP_Text hostAddressText;
+
+        [Header("Join")]
+        public Button joinButton;
+        public Image joinButtonFill;
+        public AccordionPanel joinPanel;
+        public TMP_InputField ipInput;
+        public Image ipInputBorder;
+        public Image statusDot;
+        public TMP_Text hintText;
+        public Button connectButton;
+        public Image connectButtonFill;
+        public TMP_Text connectButtonLabel;
+
+        [Header("Secondary button sprites/colors")]
+        public Sprite round14All;
+        public Sprite round14Top;
+        public Color secondaryIdleColor = new Color32(0x2b, 0x23, 0x20, 0xff);
+        public Color secondaryActiveColor = new Color32(0x3a, 0x24, 0x16, 0xff);
+        public Color connectValidColor = new Color32(0xff, 0x6b, 0x1a, 0xff);
+        public Color connectDisabledColor = new Color32(0x3a, 0x2f, 0x28, 0x99);
+
+        [Header("Status")]
+        public TMP_Text statusText;
+        public TMP_Text portText;
+
+        static readonly Color IdleColor = new Color32(0x6a, 0x5a, 0x4a, 0xff);
+        static readonly Color CheckingColor = new Color32(0xff, 0xcf, 0x4d, 0xff);
+        static readonly Color ValidColor = new Color32(0x5f, 0xbf, 0x5f, 0xff);
+        static readonly Color InvalidColor = new Color32(0xe0, 0x4b, 0x3a, 0xff);
+        static readonly Color HintIdle = new Color32(0xc9, 0x9a, 0x7a, 0xff);
+        static readonly Color HintValid = new Color32(0x8f, 0xe3, 0x8f, 0xff);
+        static readonly Color HintInvalid = new Color32(0xff, 0x8a, 0x7a, 0xff);
+
+        bool hostExpanded;
+        bool joinExpanded;
+        IpStatus ipStatus = IpStatus.Idle;
+        Coroutine debounce;
+        Coroutine dotPulse;
+
+        void Awake()
+        {
+            soloButton.onClick.AddListener(PlaySolo);
+            hostButton.onClick.AddListener(ToggleHost);
+            joinButton.onClick.AddListener(ToggleJoin);
+            connectButton.onClick.AddListener(OnConnectPressed);
+            ipInput.onValueChanged.AddListener(OnIpChanged);
+        }
+
+        void OnEnable()
+        {
+            lanMenu.OnConnected += HandleConnected;
+        }
+
+        void OnDisable()
+        {
+            lanMenu.OnConnected -= HandleConnected;
+        }
+
+        void Start()
+        {
+            portText.text = "Puerto UDP: " + lanMenu.port;
+            SetIpStatus(IpStatus.Idle);
+            statusText.text = lanMenu.Message;
+
+            StartCoroutine(UiTween.SlideAndFade(title, titleGroup, new Vector2(0f, 18f), 0.6f, 0f));
+            StartCoroutine(UiTween.SlideAndFade(subtitle, subtitleGroup, new Vector2(0f, 26f), 0.5f, 0.1f));
+            StartCoroutine(UiTween.SlideAndFade(hostBlock, hostBlockGroup, new Vector2(0f, 26f), 0.5f, 0.3f));
+            StartCoroutine(UiTween.SlideAndFade(joinBlock, joinBlockGroup, new Vector2(0f, 26f), 0.5f, 0.4f));
+        }
+
+        void Update()
+        {
+            bool connecting = lanMenu.Connecting;
+            soloButton.interactable = !connecting;
+            hostButton.interactable = !connecting;
+            statusText.text = connecting ? lanMenu.Message : string.IsNullOrEmpty(lanMenu.Message) ? "" : lanMenu.Message;
+            connectButtonLabel.text = connecting ? "CANCELAR" : "CONECTAR";
+            connectButton.interactable = connecting || ipStatus == IpStatus.Valid;
+            connectButtonFill.color = connecting || ipStatus == IpStatus.Valid ? connectValidColor : connectDisabledColor;
+        }
+
+        void PlaySolo()
+        {
+            if (lanMenu.Connecting) return;
+            melt.PlayThenLoadScene("HeatRise_Jugable");
+        }
+
+        void ToggleHost()
+        {
+            if (lanMenu.Connecting) return;
+            hostExpanded = !hostExpanded;
+            if (hostExpanded)
+            {
+                joinExpanded = false;
+                joinPanel.SetExpanded(false);
+                joinButtonFill.sprite = round14All;
+                joinButtonFill.color = secondaryIdleColor;
+                hostAddressText.text = "Puerto UDP: " + lanMenu.port;
+                lanMenu.CreateMatch();
+            }
+            hostPanel.SetExpanded(hostExpanded);
+            hostButtonFill.sprite = hostExpanded ? round14Top : round14All;
+            hostButtonFill.color = hostExpanded ? secondaryActiveColor : secondaryIdleColor;
+        }
+
+        void ToggleJoin()
+        {
+            joinExpanded = !joinExpanded;
+            if (joinExpanded)
+            {
+                hostExpanded = false;
+                hostPanel.SetExpanded(false);
+                hostButtonFill.sprite = round14All;
+                hostButtonFill.color = secondaryIdleColor;
+            }
+            joinPanel.SetExpanded(joinExpanded);
+            joinButtonFill.sprite = joinExpanded ? round14Top : round14All;
+            joinButtonFill.color = joinExpanded ? secondaryActiveColor : secondaryIdleColor;
+        }
+
+        void OnConnectPressed()
+        {
+            if (lanMenu.Connecting)
+            {
+                lanMenu.CancelConnect();
+                return;
+            }
+            if (ipStatus != IpStatus.Valid) return;
+            lanMenu.hostAddress = ipInput.text.Trim();
+            lanMenu.JoinMatch();
+        }
+
+        void OnIpChanged(string value)
+        {
+            if (debounce != null) StopCoroutine(debounce);
+            SetIpStatus(IpStatus.Checking);
+            debounce = StartCoroutine(ValidateAfterDelay(value));
+        }
+
+        IEnumerator ValidateAfterDelay(string value)
+        {
+            yield return new WaitForSecondsRealtime(0.5f);
+            bool valid = IPAddress.TryParse(value.Trim(), out IPAddress address)
+                && address.AddressFamily == AddressFamily.InterNetwork
+                && !address.Equals(IPAddress.Any) && !address.Equals(IPAddress.Broadcast);
+            SetIpStatus(valid ? IpStatus.Valid : IpStatus.Invalid);
+        }
+
+        void SetIpStatus(IpStatus status)
+        {
+            ipStatus = status;
+            if (dotPulse != null) { StopCoroutine(dotPulse); dotPulse = null; }
+            switch (status)
+            {
+                case IpStatus.Idle:
+                    statusDot.color = IdleColor;
+                    ipInputBorder.color = IdleColor;
+                    hintText.text = "Escribe la IP del host.";
+                    hintText.color = HintIdle;
+                    break;
+                case IpStatus.Checking:
+                    statusDot.color = CheckingColor;
+                    ipInputBorder.color = IdleColor;
+                    hintText.text = "Verificando formato...";
+                    hintText.color = CheckingColor;
+                    dotPulse = StartCoroutine(UiTween.PingPong(this, 0.7f, t =>
+                    {
+                        Color c = statusDot.color;
+                        c.a = Mathf.LerpUnclamped(0.3f, 1f, t);
+                        statusDot.color = c;
+                    }));
+                    break;
+                case IpStatus.Valid:
+                    statusDot.color = ValidColor;
+                    ipInputBorder.color = ValidColor;
+                    hintText.text = "IP valida.";
+                    hintText.color = HintValid;
+                    break;
+                case IpStatus.Invalid:
+                    statusDot.color = InvalidColor;
+                    ipInputBorder.color = InvalidColor;
+                    hintText.text = "Formato de IP invalido.";
+                    hintText.color = HintInvalid;
+                    break;
+            }
+        }
+
+        void HandleConnected()
+        {
+            melt.PlayThenReveal(
+                () => lanMenu.IsConnected && NetworkRace.Instance != null && NetworkRace.Instance.IsSpawned,
+                () => menuRoot.SetActive(false));
+        }
+    }
+}
