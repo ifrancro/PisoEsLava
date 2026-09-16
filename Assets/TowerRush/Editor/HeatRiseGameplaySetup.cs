@@ -200,6 +200,7 @@ namespace HeatRise.EditorTools
             template.AddComponent<NetworkObject>();
             NetworkTransform sync = template.AddComponent<NetworkTransform>();
             sync.Interpolate = true;
+            sync.UseUnreliableDeltas = true;
             sync.PositionThreshold = 0.01f;
             sync.RotAngleThreshold = 1f;
             sync.SyncScaleX = sync.SyncScaleY = sync.SyncScaleZ = false;
@@ -237,7 +238,7 @@ namespace HeatRise.EditorTools
             UnityTransport transport = networkObject.AddComponent<UnityTransport>();
             network.NetworkConfig.NetworkTransport = transport;
             network.NetworkConfig.PlayerPrefab = prefab;
-            network.NetworkConfig.TickRate = 30;
+            network.NetworkConfig.TickRate = 60;
             network.NetworkConfig.EnableSceneManagement = true;
             network.NetworkConfig.ConnectionApproval = true;
             GameObject menuObject = new GameObject("Menu_LAN");

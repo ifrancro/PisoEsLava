@@ -19,7 +19,8 @@ namespace HeatRise
         public ushort port = 7777;
         public string hostAddress = "";
 
-        const string Protocol = "HeatRise-LAN-2.1";
+        const string Version = "2.2";
+        const string Protocol = "HeatRise-LAN-" + Version;
         readonly Dictionary<ulong, int> slots = new Dictionary<ulong, int>();
         static string previousMessage = "";
         string message;
@@ -106,7 +107,8 @@ namespace HeatRise
             transport.MaxConnectAttempts = 12;
             message = $"Conectando a {address}:{port}...";
             connecting = network.StartClient();
-            if (!connecting) message = "No se pudo iniciar la conexion.";
+            if (connecting) network.NetworkTimeSystem.ServerBufferSec = 2.0 / network.NetworkConfig.TickRate;
+            else message = "No se pudo iniciar la conexion.";
         }
 
         void Connected(ulong clientId)
@@ -177,7 +179,7 @@ namespace HeatRise
             GUI.Box(panel, GUIContent.none);
             GUILayout.BeginArea(new Rect(panel.x + 22f, panel.y + 18f, width - 44f, height - 36f));
             GUILayout.BeginHorizontal();
-            GUILayout.Label("HEAT RISE · LAN", title);
+            GUILayout.Label("HEAT RISE · LAN " + Version, title);
             if (GUILayout.Button(new GUIContent("?", "Controles y ayuda"), GUILayout.Width(36f), GUILayout.Height(36f)))
                 GameManager.Instance.ShowHelp();
             GUILayout.EndHorizontal();
