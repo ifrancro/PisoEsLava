@@ -19,6 +19,11 @@ namespace HeatRise
         public bool MenuOpen => paused || HelpOpen;
         public bool HelpOpen { get; private set; }
         public float Elapsed { get; private set; }
+        public bool Paused => paused;
+        public bool Finished => finished;
+        public bool Won => won;
+        public string Reason => reason;
+        public float BestHeight => bestHeight;
 
         bool paused;
         bool finished;
@@ -166,31 +171,7 @@ namespace HeatRise
             if (Online && (!IsPlaying || paused)) return;
             if (!showHud && !paused && !finished) return;
 
-            float width = Mathf.Min(430f, Screen.width - 32f);
-            if (paused || finished)
-            {
-                Rect panel = new Rect((Screen.width - width) * 0.5f,
-                    Mathf.Max(16f, (Screen.height - 316f) * 0.5f), width, Mathf.Min(316f, Screen.height - 32f));
-                Panel(panel);
-                GUILayout.BeginArea(new Rect(panel.x + 20f, panel.y + 12f, width - 40f, panel.height - 24f));
-                GUILayout.BeginHorizontal();
-                GUILayout.Label(finished ? won ? "Llegaste a la cima" : "Fin del intento" : "Pausa", title);
-                if (GUILayout.Button("?", GUILayout.Width(30f), GUILayout.Height(30f))) ShowHelp();
-                GUILayout.EndHorizontal();
-                GUILayout.Label(finished ? reason : "La lava y los obstaculos estan detenidos.", label);
-                GUILayout.Label($"Tiempo: {Mathf.FloorToInt(Elapsed / 60f):00}:{Mathf.FloorToInt(Elapsed % 60f):00}", label);
-                GUILayout.Label($"Altura maxima: {Mathf.Clamp(bestHeight - startHeight, 0f, finishHeight - startHeight):0.0} m", label);
-                GUILayout.Space(12f);
-                if (!finished && GUILayout.Button("Continuar", GUILayout.Height(32f))) SetPaused(false);
-                if (GUILayout.Button("Reiniciar", GUILayout.Height(32f))) Restart();
-                if (GUILayout.Button("Menu principal", GUILayout.Height(32f)))
-                {
-                    Time.timeScale = 1f;
-                    SceneManager.LoadScene("HeatRise_LAN");
-                }
-                GUILayout.EndArea();
-                return;
-            }
+            if (paused || finished) return; // pause/results panel is the uGUI PauseMenuView, not IMGUI
 
             if (player == null) return;
             Rect safe = Screen.safeArea;

@@ -4,6 +4,7 @@ Shader "HeatRise/UI/MeltReveal"
     // the screen. Mirrors the mock's `clip-path: circle(0% -> 150% at 50% 100%)` melt wipe.
     Properties
     {
+        [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
         _Center ("Center (UV)", Vector) = (0.5, 0, 0, 0)
         _Radius ("Radius (0-1, fraction of farthest-corner distance)", Range(0, 1.6)) = 0
         _Aspect ("Aspect (screenW/screenH)", Float) = 1.78
@@ -45,6 +46,7 @@ Shader "HeatRise/UI/MeltReveal"
             struct appdata_t { float4 vertex : POSITION; float2 texcoord : TEXCOORD0; };
             struct v2f { float4 vertex : SV_POSITION; float2 uv : TEXCOORD0; };
 
+            sampler2D _MainTex;
             float2 _Center;
             float _Radius;
             float _Aspect;

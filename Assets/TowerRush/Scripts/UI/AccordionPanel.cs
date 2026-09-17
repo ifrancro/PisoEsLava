@@ -42,11 +42,15 @@ namespace HeatRise.UI
             }
             float target = show ? LayoutUtility.GetPreferredHeight(content) : 0f;
             float start = clip.preferredHeight;
+            RectTransform rt = (RectTransform)transform;
             yield return UiTween.Lerp(duration, t =>
             {
                 float e = UiTween.EaseOutCubic(t);
                 clip.preferredHeight = Mathf.LerpUnclamped(start, target, e);
                 if (group != null) group.alpha = show ? e : 1f - e;
+                // Changing a LayoutElement value doesn't dirty the parent VerticalLayoutGroup on its
+                // own - without this, sibling blocks keep their pre-animation position and overlap.
+                LayoutRebuilder.MarkLayoutForRebuild(rt);
             });
         }
     }

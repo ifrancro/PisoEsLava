@@ -4,6 +4,7 @@ Shader "HeatRise/UI/HeatShimmer"
     // Mirrors the mock's `shimmerMove` keyframe (background-position 0% -> 200%, 6s linear infinite).
     Properties
     {
+        [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
         _ColorA ("Color A", Color) = (1, 0.54, 0.10, 0.2)
         _ColorB ("Color B", Color) = (1, 0.69, 0.30, 0.33)
         _ColorC ("Color C", Color) = (1, 0.42, 0.10, 0.2)
@@ -44,6 +45,7 @@ Shader "HeatRise/UI/HeatShimmer"
             struct appdata_t { float4 vertex : POSITION; float2 texcoord : TEXCOORD0; };
             struct v2f { float4 vertex : SV_POSITION; float2 uv : TEXCOORD0; };
 
+            sampler2D _MainTex;
             fixed4 _ColorA, _ColorB, _ColorC, _ColorD;
             float _ScrollSpeed;
 
