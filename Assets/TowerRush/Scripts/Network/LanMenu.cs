@@ -28,10 +28,13 @@ namespace HeatRise
         public string joinCode = "";
         public string RoomCode { get; private set; } = "";
 
-        const string Version = "3.0";
+        public const string Version = "3.0";
+        public static string VersionLabel => "HEAT RISE · " + Version;
         const string Protocol = "HeatRise-LAN-" + Version;
         public event Action OnConnected;
         public bool Connecting => connecting;
+        public bool Leaving => leaving;
+        public bool IsHost => network != null && network.IsHost;
         public bool IsConnected => network != null && network.IsConnectedClient;
         public string Message => message;
         public string Addresses => addresses;
@@ -43,8 +46,6 @@ namespace HeatRise
         bool leaving;
         Task openingConnection;
         ulong localId;
-        GUIStyle title;
-        GUIStyle textStyle;
 
         void Awake()
         {
@@ -231,6 +232,16 @@ namespace HeatRise
             if (connecting) StartCoroutine(Leave(""));
         }
 
+        public void LeaveMatch()
+        {
+            if (!leaving) StartCoroutine(Leave(""));
+        }
+
+        public void RefreshAddresses()
+        {
+            addresses = LocalAddresses();
+        }
+
         void Disconnected(ulong clientId)
         {
             slots.Remove(clientId);
@@ -273,108 +284,6 @@ namespace HeatRise
             network.OnClientDisconnectCallback -= Disconnected;
             network.OnTransportFailure -= TransportFailed;
             network.OnClientStarted -= ClientStarted;
-        }
-
-        void OnGUI()
-        {
-            if (leaving)
-            {
-                GUI.Box(new Rect((Screen.width - 300f) * 0.5f, (Screen.height - 60f) * 0.5f, 300f, 60f), "Cerrando conexión...");
-                return;
-            }
-            if (GameManager.Instance != null && GameManager.Instance.HelpOpen) return;
-            if (title == null)
-            {
-                title = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold };
-                textStyle = new GUIStyle(GUI.skin.label) { fontSize = 17, wordWrap = true };
-            }
-            NetworkRace race = NetworkRace.Instance;
-            NetworkPlayer local = race.LocalPlayer;
-            bool connected = network.IsConnectedClient && race.IsSpawned;
-            if (!connected) return;
-            if (connected && race.Racing && local != null && local.Alive.Value
-                && !GameManager.Instance.MenuOpen) return;
-            float width = Mathf.Min(520f, Screen.width - 32f);
-            float height = Mathf.Min(510f, Screen.height - 32f);
-            Rect panel = new Rect((Screen.width - width) * 0.5f, (Screen.height - height) * 0.5f, width, height);
-            GUI.Box(panel, GUIContent.none);
-            GUILayout.BeginArea(new Rect(panel.x + 22f, panel.y + 18f, width - 44f, height - 36f));
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("HEAT RISE · " + Version, title);
-            if (GUILayout.Button(new GUIContent("?", "Controles y ayuda"), GUILayout.Width(36f), GUILayout.Height(36f)))
-                GameManager.Instance.ShowHelp();
-            GUILayout.EndHorizontal();
-            GUILayout.Space(10f);
-            {
-                if (race.InLobby)
-                {
-                    if (useInternet)
-                    {
-                        GUILayout.BeginHorizontal();
-                        GUILayout.Label(string.IsNullOrEmpty(RoomCode) ? "Preparando código..." : "Código: " + RoomCode, textStyle);
-                        GUI.enabled = !string.IsNullOrEmpty(RoomCode);
-                        if (GUILayout.Button("Copiar", GUILayout.Width(80f), GUILayout.Height(30f)))
-                            GUIUtility.systemCopyBuffer = RoomCode;
-                        GUI.enabled = true;
-                        GUILayout.EndHorizontal();
-                    }
-                    else if (network.IsHost)
-                    {
-                        GUILayout.BeginHorizontal();
-                        GUILayout.Label("IP de este host: " + addresses + " · Puerto " + port, textStyle);
-                        if (GUILayout.Button("Actualizar IP", GUILayout.Width(100f), GUILayout.Height(30f)))
-                            addresses = LocalAddresses();
-                        GUILayout.EndHorizontal();
-                    }
-                    GUILayout.Label(race.Players.Count + " / 4 conectados", textStyle);
-                    foreach (NetworkPlayer player in race.Players)
-                    {
-                        Color previous = GUI.contentColor;
-                        GUI.contentColor = player.RaceColor;
-                        GUILayout.Label(player.Label + (player.IsOwner ? " (vos)" : "")
-                            + (player.Ready.Value ? " · Listo" : " · Esperando"), textStyle);
-                        GUI.contentColor = previous;
-                    }
-                    if (local != null && GUILayout.Button(local.Ready.Value ? "Quitar listo" : "Estoy listo", GUILayout.Height(36f)))
-                        local.SetReadyRpc(!local.Ready.Value);
-                    if (network.IsHost)
-                    {
-                        GUI.enabled = race.AllReady;
-                        if (GUILayout.Button("Iniciar carrera", GUILayout.Height(40f))) race.StartRace();
-                        GUI.enabled = true;
-                        GUILayout.Label("Se necesitan al menos 2 jugadores y todos listos.", textStyle);
-                    }
-                    else GUILayout.Label("El host inicia cuando todos esten listos.", textStyle);
-                }
-                else if (race.Stage.Value == 1)
-                    GUILayout.Label("Comenzamos en " + race.Countdown, title);
-                else if (race.Stage.Value == 3)
-                {
-                    GUILayout.Label(race.WinnerSlot.Value >= 0
-                        ? "Gano Jugador " + (race.WinnerSlot.Value + 1) : "Todos eliminados. Sin ganador.", title);
-                    GUILayout.Label("Tiempo: " + race.Elapsed.ToString("0.0") + " s", textStyle);
-                    if (network.IsHost && GUILayout.Button("Volver a la sala / Otra ronda", GUILayout.Height(40f)))
-                        race.ReturnToLobby();
-                    else if (!network.IsHost) GUILayout.Label("El host puede preparar otra ronda.", textStyle);
-                }
-                else if (local != null && !local.Alive.Value)
-                {
-                    GUILayout.Label("Eliminado", title);
-                    GUILayout.Label(local.Cause.Value == 2 ? "La lava te alcanzo." : "Te caiste de la torre.", textStyle);
-                    GUILayout.Label("La carrera continua. Espera el resultado.", textStyle);
-                    if (network.IsHost) GUILayout.Label("Mantené el juego abierto: esta computadora sigue siendo el servidor.", textStyle);
-                }
-                else
-                {
-                    GUILayout.Label("Menu", title);
-                    GUILayout.Label("La carrera sigue en marcha.", textStyle);
-                    if (GUILayout.Button("Continuar", GUILayout.Height(40f))) GameManager.Instance.SetPaused(false);
-                }
-                GUILayout.Space(14f);
-                if (GUILayout.Button(network.IsHost ? "Cerrar partida para todos" : "Salir de la partida", GUILayout.Height(34f)))
-                    StartCoroutine(Leave(""));
-            }
-            GUILayout.EndArea();
         }
 
         static string LocalAddresses()

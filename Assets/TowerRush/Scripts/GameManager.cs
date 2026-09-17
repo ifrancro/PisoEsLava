@@ -33,11 +33,9 @@ namespace HeatRise
         string message = "";
         float messageUntil;
         GUIStyle label;
-        GUIStyle title;
         GUIStyle small;
         GUIStyle value;
         GUIStyle centered;
-        Vector2 helpScroll;
         static readonly Color Mint = new Color(0.72f, 0.98f, 0.51f);
         static readonly Color Cyan = new Color(0.47f, 0.89f, 0.94f);
         static readonly Color Orange = new Color(1f, 0.7f, 0.46f);
@@ -127,7 +125,11 @@ namespace HeatRise
         {
             if (IsPlaying) SetPaused(true);
             HelpOpen = true;
-            helpScroll = Vector2.zero;
+        }
+
+        public void CloseHelp()
+        {
+            HelpOpen = false;
         }
 
         public void Restart()
@@ -158,16 +160,11 @@ namespace HeatRise
             if (label == null)
             {
                 label = new GUIStyle(GUI.skin.label) { fontSize = 14, wordWrap = true };
-                title = new GUIStyle(label) { fontSize = 23, fontStyle = FontStyle.Bold };
-                small = new GUIStyle(label) { fontSize = 11, wordWrap = false };
+                    small = new GUIStyle(label) { fontSize = 11, wordWrap = false };
                 value = new GUIStyle(label) { fontSize = 19, fontStyle = FontStyle.Bold, wordWrap = false };
                 centered = new GUIStyle(small) { alignment = TextAnchor.MiddleCenter };
             }
-            if (HelpOpen)
-            {
-                DrawHelp();
-                return;
-            }
+            if (HelpOpen) return;
             if (Online && (!IsPlaying || paused)) return;
             if (!showHud && !paused && !finished) return;
 
@@ -269,38 +266,6 @@ namespace HeatRise
                 if (runner.IsOwner) Fill(new Rect(marker.x + 2f, marker.yMax - 2f, marker.width - 4f, 2f), Color.white);
             }
             GUI.Label(new Rect(rect.x, rect.yMax + 4f, rect.width, 18f), "INICIO", centered);
-        }
-
-        void DrawHelp()
-        {
-            Fill(new Rect(0f, 0f, Screen.width, Screen.height), new Color(0.015f, 0.035f, 0.045f, 0.88f));
-            float width = Mathf.Min(590f, Screen.width - 32f);
-            float height = Mathf.Min(650f, Screen.height - 32f);
-            Rect panel = new Rect((Screen.width - width) * 0.5f, (Screen.height - height) * 0.5f, width, height);
-            Panel(panel);
-            GUILayout.BeginArea(new Rect(panel.x + 20f, panel.y + 16f, width - 40f, height - 32f));
-            GUILayout.Label("Siempre hacia arriba", title);
-            helpScroll = GUILayout.BeginScrollView(helpScroll);
-            GUILayout.Label("Escalá los 6 sectores hasta la meta. La lava empieza a subir después de 8 segundos y acelera con el tiempo.", label);
-            HelpSection("CONTROLES", "WASD / Flechas: moverse según la cámara.\nEspacio: saltar; un salto por pulsación.\nQ: pequeño, más rápido y capaz de cruzar conductos.\nE: gigante; F empuja bloques cercanos.\nR: volver al tamaño normal.\nF: guardar checkpoint sobre su botón verde.\nRatón: arrastrar con botón izquierdo, derecho o central para girar cámara.\nRueda: acercar o alejar.\nC: mirar hacia la siguiente plataforma.\nEsc / P: abrir pausa; Enter: continuar en modo solo.");
-            HelpSection("TRANSFORMACIONES", "Pequeño y gigante duran 7 segundos. Recargan durante 4 segundos al terminar. Pequeño corre un 35 % más rápido; gigante camina más lento y resiste mejor los golpes. Si un techo u otro jugador impiden crecer, seguís pequeño hasta tener espacio.");
-            HelpSection("COLORES Y OBSTÁCULOS", "Ámbar: plataformas frágiles; ceden 1,8 segundos después de pisarlas y reaparecen 5 segundos después.\nCian: plataformas móviles; calculá el salto y viajá sobre ellas.\nRojo: barras, martillos y prensas; evitá sus golpes.\nVioleta: bloques pesados; usá E y luego F para abrir paso.\nVerde: checkpoints y meta.");
-            HelpSection("CHECKPOINTS Y CAÍDAS", "Hay 3 bases exteriores junto al recorrido. Parate sobre el botón verde y pulsá F para guardar. Cada jugador guarda su propio avance durante esa ronda. Caer por debajo de la plataforma desde la que saliste o tocar lava te devuelve al último checkpoint, si todavía está por encima de la lava. Sin un checkpoint seguro, termina tu intento.");
-            HelpSection("CARRERA ONLINE · 2 A 4 JUGADORES", "Usen la misma versión del juego. En Internet, un jugador crea partida y comparte el código; los demás lo escriben y se unen, aunque estén en otras redes. El host debe mantener el juego abierto. Todos marcan Listo; el host inicia la carrera.\nLAN permite jugar en la misma red usando la IP local del host y puerto UDP 7777.\nCada jugador tiene un color: rosa, azul, verde o naranja. La barra derecha muestra J1–J4 según su altura, de INICIO a META; tu marcador lleva una raya blanca. Los eliminados quedan atenuados. El primero en llegar gana.\nAbrir pausa o ayuda no detiene la carrera online. Si el host sale, la partida se cierra para todos. No se puede entrar durante una carrera.");
-            GUILayout.EndScrollView();
-            GUILayout.Space(8f);
-            if (GUILayout.Button("Entendido", GUILayout.Height(34f))) HelpOpen = false;
-            GUILayout.EndArea();
-        }
-
-        void HelpSection(string heading, string text)
-        {
-            GUILayout.Space(14f);
-            Color previous = GUI.contentColor;
-            GUI.contentColor = Mint;
-            GUILayout.Label(heading, label);
-            GUI.contentColor = previous;
-            GUILayout.Label(text, label);
         }
 
         static void Panel(Rect rect)

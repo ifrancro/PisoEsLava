@@ -15,6 +15,15 @@ namespace HeatRise.EditorTools
             MenuFontPipeline.GenerateFontAssets();
             MenuAssetGenerator.GenerateAll();
             LanMenuBuilder.Build();
+            LobbyMenuBuilder.Build();
+            HelpMenuBuilder.Build();
+        }
+
+        /// <summary>Solo los paneles nuevos: sala online y ayuda.</summary>
+        public static void BuildPanels()
+        {
+            LobbyMenuBuilder.Build();
+            HelpMenuBuilder.Build();
         }
     }
 }

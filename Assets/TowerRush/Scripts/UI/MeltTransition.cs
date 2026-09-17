@@ -13,6 +13,9 @@ namespace HeatRise.UI
         public float revealDuration = 0.5f;
         const float MaxRadius = 1.6f;
 
+        /// <summary>True mientras la transicion cubre la pantalla.</summary>
+        public bool Active => isActiveAndEnabled;
+
         Material material;
 
         void Awake()

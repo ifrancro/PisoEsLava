@@ -272,7 +272,24 @@ namespace HeatRise.UI
         {
             melt.PlayThenReveal(
                 () => lanMenu.IsConnected && NetworkRace.Instance != null && NetworkRace.Instance.IsSpawned,
-                () => menuRoot.SetActive(false));
+                () => SetMenuVisible(false));
+        }
+
+        /// <summary>
+        /// Apaga el menu y tambien su fondo. El degradado, el brillo, el shimmer y las cenizas son
+        /// hermanos de menuRoot dentro del canvas: si quedan activos tapan la partida online.
+        /// </summary>
+        void SetMenuVisible(bool visible)
+        {
+            menuRoot.SetActive(visible);
+            Transform canvas = menuRoot.transform.parent;
+            if (canvas == null) return;
+            for (int i = 0; i < canvas.childCount; i++)
+            {
+                GameObject child = canvas.GetChild(i).gameObject;
+                if (child == menuRoot || (melt != null && child == melt.gameObject)) continue;
+                child.SetActive(visible);
+            }
         }
     }
 }
