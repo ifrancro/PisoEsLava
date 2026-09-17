@@ -28,7 +28,16 @@ namespace HeatRise
         public string joinCode = "";
         public string RoomCode { get; private set; } = "";
 
+        /// Fires once when the local client finishes connecting (host or client). Menu UI uses this to switch away from the pre-connect screen.
+        public event System.Action OnConnected;
+
+        public bool Connecting => connecting;
+        public bool IsConnected => network != null && network.IsConnectedClient;
+        public string Message => message;
+        public string Addresses => addresses;
+
         const string Version = "3.0";
+
         const string Protocol = "HeatRise-LAN-" + Version;
         static readonly string[] ConnectionModes = { "Internet · código", "LAN · misma red" };
         readonly Dictionary<ulong, int> slots = new Dictionary<ulong, int>();
@@ -219,6 +228,13 @@ namespace HeatRise
             connecting = false;
             localId = clientId;
             message = "";
+            OnConnected?.Invoke();
+        }
+
+        /// Cancels an in-progress client connection attempt. Used by the pre-connect uGUI screen; no-op once connected.
+        public void CancelConnect()
+        {
+            if (connecting) StartCoroutine(Leave(""));
         }
 
         void Disconnected(ulong clientId)
@@ -283,6 +299,7 @@ namespace HeatRise
             NetworkRace race = NetworkRace.Instance;
             NetworkPlayer local = race.LocalPlayer;
             bool connected = network.IsConnectedClient && race.IsSpawned;
+            if (!connected) return; // pre-connect screen is the uGUI LanMenuView, not IMGUI
             if (connected && race.Racing && local != null && local.Alive.Value
                 && !GameManager.Instance.MenuOpen) return;
             float width = Mathf.Min(520f, Screen.width - 32f);
@@ -296,28 +313,10 @@ namespace HeatRise
                 GameManager.Instance.ShowHelp();
             GUILayout.EndHorizontal();
             GUILayout.Space(10f);
-            if (!connected)
+            GUILayout.Space(10f);
             {
-                GUI.enabled = !connecting;
-                useInternet = GUILayout.Toolbar(useInternet ? 0 : 1, ConnectionModes, GUILayout.Height(30f)) == 0;
-                GUILayout.Label(useInternet ? "2 a 4 jugadores. Compartí código, desde cualquier red."
-                    : "2 a 4 jugadores en la misma red.", textStyle);
-                GUILayout.Space(8f);
-                if (GUILayout.Button("Jugar solo", GUILayout.Height(36f)))
-                    SceneManager.LoadScene("HeatRise_Jugable");
-                if (GUILayout.Button("Crear partida (host)", GUILayout.Height(40f))) CreateMatch();
-                GUILayout.Space(14f);
-                GUILayout.Label(useInternet ? "Código de partida" : "IP del host", textStyle);
-                if (useInternet) joinCode = GUILayout.TextField(joinCode, 12, GUILayout.Height(30f));
-                else hostAddress = GUILayout.TextField(hostAddress, 45, GUILayout.Height(30f));
-                if (GUILayout.Button("Unirse a la partida", GUILayout.Height(40f))) JoinMatch();
-                GUI.enabled = true;
-                if (!useInternet) GUILayout.Label("Puerto UDP: " + port, textStyle);
-                if (!string.IsNullOrEmpty(message)) GUILayout.Label(message, textStyle);
-                if (connecting && GUILayout.Button("Cancelar", GUILayout.Height(32f)))
-                    StartCoroutine(Leave(""));
-            }
-            else
+                if (race.InLobby)
+
             {
                 if (race.InLobby)
                 {
