@@ -1,7 +1,5 @@
 Shader "HeatRise/UI/MeltReveal"
 {
-    // Full-screen scene transition: a lava-colored circle grows from a UV point until it covers
-    // the screen. Mirrors the mock's `clip-path: circle(0% -> 150% at 50% 100%)` melt wipe.
     Properties
     {
         [PerRendererData] _MainTex ("Lava Texture", 2D) = "white" {}
@@ -74,7 +72,7 @@ Shader "HeatRise/UI/MeltReveal"
 
                 float2 uv = i.uv * _Tiling + _Time.y * _ScrollSpeed;
                 fixed3 lava = tex2D(_MainTex, uv).rgb;
-                lava *= lerp(1.15, 1.0 - _EdgeDarken, t); // brighter near the growing center, darker toward the rim
+                lava *= lerp(1.15, 1.0 - _EdgeDarken, t);
                 float inside = step(dist, _Radius * maxDist);
                 return fixed4(lava, inside);
             }

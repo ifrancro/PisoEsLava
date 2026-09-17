@@ -8,9 +8,6 @@ using UnityEngine.UI;
 
 namespace HeatRise.UI
 {
-    /// uGUI presentation for the pre-connect LAN menu screen (title/solo/host/join). Pure view: all
-    /// networking stays in <see cref="LanMenu"/>. Hidden once a connection is established, handing
-    /// off to the existing IMGUI lobby/race HUD.
     public sealed class LanMenuView : MonoBehaviour
     {
         enum IpStatus { Idle, Checking, Valid, Invalid }
@@ -112,10 +109,10 @@ namespace HeatRise.UI
             SelectMode(true);
             statusText.text = lanMenu.Message;
 
-            StartCoroutine(UiTween.SlideAndFade(title, titleGroup, new Vector2(0f, 18f), 0.6f, 0f));
-            StartCoroutine(UiTween.SlideAndFade(subtitle, subtitleGroup, new Vector2(0f, 26f), 0.5f, 0.1f));
-            StartCoroutine(UiTween.SlideAndFade(hostBlock, hostBlockGroup, new Vector2(0f, 26f), 0.5f, 0.3f));
-            StartCoroutine(UiTween.SlideAndFade(joinBlock, joinBlockGroup, new Vector2(0f, 26f), 0.5f, 0.4f));
+            titleGroup.alpha = 1f;
+            subtitleGroup.alpha = 1f;
+            hostBlockGroup.alpha = 1f;
+            joinBlockGroup.alpha = 1f;
         }
 
         void Update()
@@ -222,6 +219,14 @@ namespace HeatRise.UI
             ((TMP_Text)ipInput.placeholder).text = internet ? "ABC123" : "192.168.1.20";
             ipInput.text = "";
             SetIpStatus(IpStatus.Idle);
+            StartCoroutine(RebuildLayout());
+        }
+
+        IEnumerator RebuildLayout()
+        {
+            yield return null;
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)subtitle.parent);
         }
 
         void SetIpStatus(IpStatus status)
