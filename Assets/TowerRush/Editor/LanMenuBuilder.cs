@@ -13,6 +13,7 @@ namespace HeatRise.EditorTools
     /// only the "LanMenuCanvas" root it owns, leaving the rest of the scene untouched.
     public sealed class LanMenuBuilder
     {
+        const string ScenePath = "Assets/TowerRush/Scenes/HeatRise_LAN.unity";
         const string SpriteDir = "Assets/TowerRush/UI/Sprites/Generated";
         const string FontDir = "Assets/TowerRush/Fonts/TMP";
 
@@ -33,6 +34,7 @@ namespace HeatRise.EditorTools
 
         Sprite _round14All, _round14Top, _round14Bottom, _round14Cta, _round10All, _round8All, _ring10, _ring14, _circle, _circleSoft, _bgGradient;
         TMP_FontAsset _fredokaBold, _nunitoSemi, _nunitoBold, _nunitoExtra;
+        Texture2D _lavaTexture;
 
         [MenuItem("HeatRise/Menu/3 Build LAN Menu UI")]
         public static void Build()
@@ -44,6 +46,7 @@ namespace HeatRise.EditorTools
         void Run()
         {
             LoadAssets();
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
 
             GameObject menuLan = GameObject.Find("Menu_LAN");
             if (menuLan == null) { Debug.LogError("[LanMenuBuilder] Menu_LAN GameObject not found in the open scene."); return; }
@@ -109,6 +112,9 @@ namespace HeatRise.EditorTools
             _nunitoSemi = Load<TMP_FontAsset>(FontDir + "/NunitoSans-SemiBold SDF.asset");
             _nunitoBold = Load<TMP_FontAsset>(FontDir + "/NunitoSans-Bold SDF.asset");
             _nunitoExtra = Load<TMP_FontAsset>(FontDir + "/NunitoSans-ExtraBold SDF.asset");
+
+            MenuAssetGenerator.EnsureLavaTextureImport();
+            _lavaTexture = Load<Texture2D>(MenuAssetGenerator.LavaTexturePath);
         }
 
         static T Load<T>(string path) where T : Object
@@ -147,7 +153,12 @@ namespace HeatRise.EditorTools
             Image shimmerImage = shimmer.gameObject.AddComponent<Image>();
             shimmerImage.raycastTarget = false;
             Shader shimmerShader = Shader.Find("HeatRise/UI/HeatShimmer");
-            if (shimmerShader != null) shimmerImage.material = new Material(shimmerShader);
+            if (shimmerShader != null)
+            {
+                Material shimmerMat = new Material(shimmerShader);
+                shimmerMat.mainTexture = _lavaTexture;
+                shimmerImage.material = shimmerMat;
+            }
 
             GameObject ashLayer = NewChild("AshParticles", canvasRt);
             Stretch(ashLayer.GetComponent<RectTransform>());
@@ -447,7 +458,12 @@ namespace HeatRise.EditorTools
             Stretch(rt);
             Image image = go.AddComponent<Image>();
             Shader meltShader = Shader.Find("HeatRise/UI/MeltReveal");
-            if (meltShader != null) image.material = new Material(meltShader);
+            if (meltShader != null)
+            {
+                Material meltMat = new Material(meltShader);
+                meltMat.mainTexture = _lavaTexture;
+                image.material = meltMat;
+            }
             MeltTransition melt = go.AddComponent<MeltTransition>();
             melt.image = image;
             return melt;

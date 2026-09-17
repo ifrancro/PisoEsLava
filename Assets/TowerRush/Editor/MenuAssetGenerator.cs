@@ -11,6 +11,26 @@ namespace HeatRise.EditorTools
     public static class MenuAssetGenerator
     {
         const string OutDir = "Assets/TowerRush/UI/Sprites/Generated";
+        public const string LavaTexturePath = "Assets/TowerRush/UI/Textures/textura_lava.png";
+
+        /// Ensures the user-provided lava photo is imported for tiling/scrolling use in a shader
+        /// (not as a UI Sprite): Repeat wrap so the scroll doesn't clamp-stretch at the seam.
+        public static void EnsureLavaTextureImport()
+        {
+            TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(LavaTexturePath);
+            if (importer == null)
+            {
+                Debug.LogError("[MenuAssetGenerator] Missing lava texture at: " + LavaTexturePath);
+                return;
+            }
+            importer.textureType = TextureImporterType.Default;
+            importer.wrapMode = TextureWrapMode.Repeat;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.sRGBTexture = true;
+            importer.mipmapEnabled = true;
+            EditorUtility.SetDirty(importer);
+            importer.SaveAndReimport();
+        }
 
         [MenuItem("HeatRise/Menu/Generate UI Sprites")]
         public static void GenerateAll()

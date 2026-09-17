@@ -4,12 +4,13 @@ Shader "HeatRise/UI/MeltReveal"
     // the screen. Mirrors the mock's `clip-path: circle(0% -> 150% at 50% 100%)` melt wipe.
     Properties
     {
+        [PerRendererData] _MainTex ("Lava Texture", 2D) = "white" {}
         _Center ("Center (UV)", Vector) = (0.5, 0, 0, 0)
         _Radius ("Radius (0-1, fraction of farthest-corner distance)", Range(0, 1.6)) = 0
         _Aspect ("Aspect (screenW/screenH)", Float) = 1.78
-        _ColorCenter ("Color Center", Color) = (1, 0.75, 0.30, 1)
-        _ColorMid ("Color Mid", Color) = (1, 0.42, 0.10, 1)
-        _ColorEdge ("Color Edge", Color) = (0.23, 0.06, 0.02, 1)
+        _Tiling ("Tiling", Vector) = (1.4, 1.4, 0, 0)
+        _ScrollSpeed ("Scroll Speed (UV/sec)", Vector) = (0.02, 0.05, 0, 0)
+        _EdgeDarken ("Edge Darken", Range(0, 1)) = 0.5
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
         _StencilOp ("Stencil Operation", Float) = 0
@@ -45,12 +46,13 @@ Shader "HeatRise/UI/MeltReveal"
             struct appdata_t { float4 vertex : POSITION; float2 texcoord : TEXCOORD0; };
             struct v2f { float4 vertex : SV_POSITION; float2 uv : TEXCOORD0; };
 
+            sampler2D _MainTex;
             float2 _Center;
             float _Radius;
             float _Aspect;
-            fixed4 _ColorCenter;
-            fixed4 _ColorMid;
-            fixed4 _ColorEdge;
+            float2 _Tiling;
+            float2 _ScrollSpeed;
+            float _EdgeDarken;
 
             v2f vert(appdata_t v)
             {
@@ -70,10 +72,11 @@ Shader "HeatRise/UI/MeltReveal"
                 float maxDist = max(length(corner), 0.0001);
                 float t = saturate(dist / maxDist);
 
-                fixed4 col = t < 0.45 ? lerp(_ColorCenter, _ColorMid, t / 0.45) : lerp(_ColorMid, _ColorEdge, (t - 0.45) / 0.55);
+                float2 uv = i.uv * _Tiling + _Time.y * _ScrollSpeed;
+                fixed3 lava = tex2D(_MainTex, uv).rgb;
+                lava *= lerp(1.15, 1.0 - _EdgeDarken, t); // brighter near the growing center, darker toward the rim
                 float inside = step(dist, _Radius * maxDist);
-                col.a *= inside;
-                return col;
+                return fixed4(lava, inside);
             }
             ENDCG
         }
