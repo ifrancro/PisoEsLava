@@ -1,15 +1,13 @@
 Shader "HeatRise/UI/HeatShimmer"
 {
-    // Horizontally scrolling 4-stop gradient, screen-blended over the menu background.
-    // Mirrors the mock's `shimmerMove` keyframe (background-position 0% -> 200%, 6s linear infinite).
+    // Slowly drifting lava texture, screen-blended over the menu background, subtle intensity so it
+    // reads as heat shimmer rather than a solid image. Mirrors the mock's `shimmerMove` keyframe.
     Properties
     {
-        [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
-        _ColorA ("Color A", Color) = (1, 0.54, 0.10, 0.2)
-        _ColorB ("Color B", Color) = (1, 0.69, 0.30, 0.33)
-        _ColorC ("Color C", Color) = (1, 0.42, 0.10, 0.2)
-        _ColorD ("Color D", Color) = (1, 0.82, 0.48, 0.27)
-        _ScrollSpeed ("Scroll Speed (cycles/sec)", Float) = 0.1667
+        [PerRendererData] _MainTex ("Lava Texture", 2D) = "white" {}
+        _Tiling ("Tiling", Vector) = (1.6, 1.6, 0, 0)
+        _ScrollSpeed ("Scroll Speed (UV/sec)", Vector) = (0.03, 0.015, 0, 0)
+        _Intensity ("Intensity", Range(0, 1)) = 0.4
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
         _StencilOp ("Stencil Operation", Float) = 0
@@ -46,8 +44,9 @@ Shader "HeatRise/UI/HeatShimmer"
             struct v2f { float4 vertex : SV_POSITION; float2 uv : TEXCOORD0; };
 
             sampler2D _MainTex;
-            fixed4 _ColorA, _ColorB, _ColorC, _ColorD;
-            float _ScrollSpeed;
+            float2 _Tiling;
+            float2 _ScrollSpeed;
+            float _Intensity;
 
             v2f vert(appdata_t v)
             {
@@ -59,10 +58,9 @@ Shader "HeatRise/UI/HeatShimmer"
 
             fixed4 frag(v2f i) : SV_Target
             {
-                float x = frac(i.uv.x - _Time.y * _ScrollSpeed) * 4.0;
-                fixed4 c0 = x < 1 ? lerp(_ColorD, _ColorA, x) : x < 2 ? lerp(_ColorA, _ColorB, x - 1) :
-                            x < 3 ? lerp(_ColorB, _ColorC, x - 2) : lerp(_ColorC, _ColorD, x - 3);
-                return c0;
+                float2 uv = i.uv * _Tiling + _Time.y * _ScrollSpeed;
+                fixed3 lava = tex2D(_MainTex, uv).rgb;
+                return fixed4(lava * _Intensity, 1);
             }
             ENDCG
         }

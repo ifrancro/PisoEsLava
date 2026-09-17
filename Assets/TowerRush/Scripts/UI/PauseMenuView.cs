@@ -15,6 +15,8 @@ namespace HeatRise.UI
         public GameObject panelRoot;
         public CanvasGroup panelGroup;
         public RectTransform panelRect;
+        public GameObject dim;
+        public CanvasGroup dimGroup;
         public MeltTransition melt;
 
         [Header("Texts")]
@@ -49,6 +51,8 @@ namespace HeatRise.UI
             panelGroup.alpha = 0f;
             panelRect.localScale = Vector3.one * 0.9f;
             panelRoot.SetActive(false);
+            dimGroup.alpha = 0f;
+            dim.SetActive(false);
         }
 
         void Update()
@@ -63,6 +67,7 @@ namespace HeatRise.UI
         {
             shown = true;
             panelRoot.SetActive(true);
+            dim.SetActive(true);
             bool finished = gm.Finished;
             titleText.text = finished ? gm.Won ? "Llegaste a la cima" : "Fin del intento" : "Pausa";
             titleText.color = finished ? gm.Won ? WonColor : LostColor : PausedColor;
@@ -75,6 +80,7 @@ namespace HeatRise.UI
                 float e = UiTween.EaseOutBack(t);
                 panelGroup.alpha = Mathf.Clamp01(t * 2f);
                 panelRect.localScale = Vector3.LerpUnclamped(Vector3.one * 0.9f, Vector3.one, e);
+                dimGroup.alpha = t;
             }));
         }
 
@@ -91,8 +97,10 @@ namespace HeatRise.UI
             {
                 panelGroup.alpha = 1f - t;
                 panelRect.localScale = Vector3.LerpUnclamped(Vector3.one, Vector3.one * 0.94f, t);
+                dimGroup.alpha = 1f - t;
             });
             panelRoot.SetActive(false);
+            dim.SetActive(false);
         }
 
         void LateUpdate()

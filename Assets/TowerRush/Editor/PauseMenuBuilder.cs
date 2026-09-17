@@ -27,6 +27,7 @@ namespace HeatRise.EditorTools
 
         Sprite _round14All, _round14Cta, _ring14, _round10All;
         TMP_FontAsset _fredokaBold, _nunitoSemi, _nunitoExtra;
+        Texture2D _lavaTexture;
 
         [MenuItem("HeatRise/Menu/4 Build Pause Menu UI")]
         public static void Build()
@@ -64,6 +65,8 @@ namespace HeatRise.EditorTools
             Image dimImage = dim.gameObject.AddComponent<Image>();
             dimImage.color = DimColor;
             dimImage.raycastTarget = true;
+            view.dim = dim.gameObject;
+            view.dimGroup = dim.gameObject.AddComponent<CanvasGroup>();
 
             view.panelRoot = BuildCard(canvasRt, view);
             view.melt = BuildMeltOverlay(canvasRt);
@@ -84,6 +87,9 @@ namespace HeatRise.EditorTools
             _fredokaBold = Load<TMP_FontAsset>(FontDir + "/Fredoka-Bold SDF.asset");
             _nunitoSemi = Load<TMP_FontAsset>(FontDir + "/NunitoSans-SemiBold SDF.asset");
             _nunitoExtra = Load<TMP_FontAsset>(FontDir + "/NunitoSans-ExtraBold SDF.asset");
+
+            MenuAssetGenerator.EnsureLavaTextureImport();
+            _lavaTexture = Load<Texture2D>(MenuAssetGenerator.LavaTexturePath);
         }
 
         static T Load<T>(string path) where T : Object
@@ -198,7 +204,12 @@ namespace HeatRise.EditorTools
             Stretch(rt);
             Image image = rt.gameObject.AddComponent<Image>();
             Shader meltShader = Shader.Find("HeatRise/UI/MeltReveal");
-            if (meltShader != null) image.material = new Material(meltShader);
+            if (meltShader != null)
+            {
+                Material meltMat = new Material(meltShader);
+                meltMat.mainTexture = _lavaTexture;
+                image.material = meltMat;
+            }
             MeltTransition melt = rt.gameObject.AddComponent<MeltTransition>();
             melt.image = image;
             return melt;

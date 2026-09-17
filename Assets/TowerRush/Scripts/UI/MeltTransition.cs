@@ -24,7 +24,11 @@ namespace HeatRise.UI
             gameObject.SetActive(false);
         }
 
-        void SetRadius(float value) => material.SetFloat("_Radius", value);
+        void SetRadius(float value)
+        {
+            material.SetFloat("_Aspect", (float)Screen.width / Mathf.Max(1, Screen.height));
+            material.SetFloat("_Radius", value);
+        }
 
         public void PlayThenLoadScene(string sceneName)
         {
