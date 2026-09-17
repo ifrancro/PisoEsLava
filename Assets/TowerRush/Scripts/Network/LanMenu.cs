@@ -1,11 +1,17 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
+using Unity.Services.Authentication;
+using Unity.Services.Core;
+using Unity.Services.Relay;
+using Unity.Services.Relay.Models;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -18,23 +24,24 @@ namespace HeatRise
         public UnityTransport transport;
         public ushort port = 7777;
         public string hostAddress = "";
+        public bool useInternet = true;
+        public string joinCode = "";
+        public string RoomCode { get; private set; } = "";
 
-        /// Fires once when the local client finishes connecting (host or client). Menu UI uses this to switch away from the pre-connect screen.
-        public event System.Action OnConnected;
-
+        const string Version = "3.0";
+        const string Protocol = "HeatRise-LAN-" + Version;
+        public event Action OnConnected;
         public bool Connecting => connecting;
         public bool IsConnected => network != null && network.IsConnectedClient;
         public string Message => message;
         public string Addresses => addresses;
-
-        const string Version = "2.2";
-        const string Protocol = "HeatRise-LAN-" + Version;
         readonly Dictionary<ulong, int> slots = new Dictionary<ulong, int>();
         static string previousMessage = "";
         string message;
         string addresses;
         bool connecting;
         bool leaving;
+        Task openingConnection;
         ulong localId;
         GUIStyle title;
         GUIStyle textStyle;
@@ -62,6 +69,7 @@ namespace HeatRise
             network.OnClientConnectedCallback += Connected;
             network.OnClientDisconnectCallback += Disconnected;
             network.OnTransportFailure += TransportFailed;
+            network.OnClientStarted += ClientStarted;
         }
 
         public int GetSlot(ulong clientId)
@@ -94,6 +102,11 @@ namespace HeatRise
         public void CreateMatch()
         {
             if (connecting || network.IsListening || leaving) return;
+            if (useInternet)
+            {
+                ConnectInternet(true);
+                return;
+            }
             addresses = LocalAddresses();
             transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");
             message = "";
@@ -103,6 +116,17 @@ namespace HeatRise
         public void JoinMatch()
         {
             if (connecting || network.IsListening || leaving) return;
+            if (useInternet)
+            {
+                joinCode = joinCode.Trim().ToUpperInvariant();
+                if (joinCode.Length == 0)
+                {
+                    message = "Escribí el código que te compartió el host.";
+                    return;
+                }
+                ConnectInternet(false);
+                return;
+            }
             if (!IPAddress.TryParse(hostAddress.Trim(), out IPAddress address)
                 || address.AddressFamily != AddressFamily.InterNetwork || address.Equals(IPAddress.Any)
                 || address.Equals(IPAddress.Broadcast))
@@ -115,8 +139,82 @@ namespace HeatRise
             transport.MaxConnectAttempts = 12;
             message = $"Conectando a {address}:{port}...";
             connecting = network.StartClient();
-            if (connecting) network.NetworkTimeSystem.ServerBufferSec = 2.0 / network.NetworkConfig.TickRate;
-            else message = "No se pudo iniciar la conexion.";
+            if (!connecting) message = "No se pudo iniciar la conexion.";
+        }
+
+        void ConnectInternet(bool hosting)
+        {
+            connecting = true;
+            message = hosting ? "Creando partida online..." : "Conectando por código...";
+            transport.ConnectTimeoutMS = 1000;
+            transport.MaxConnectAttempts = 12;
+            openingConnection = OpenInternet(hosting);
+        }
+
+        async Task OpenInternet(bool hosting)
+        {
+            try
+            {
+                if (UnityServices.State != ServicesInitializationState.Initialized)
+                    await UnityServices.InitializeAsync();
+                if (this == null || leaving) return;
+                if (!AuthenticationService.Instance.IsSignedIn)
+                    await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                if (this == null || leaving) return;
+                if (hosting)
+                {
+                    Allocation allocation = await RelayService.Instance.CreateAllocationAsync(3);
+                    if (this == null || leaving) return;
+                    string code = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
+                    if (this == null || leaving) return;
+                    transport.SetRelayServerData(allocation.ToRelayServerData("dtls"));
+                    RoomCode = code;
+                    if (!network.StartHost()) throw new InvalidOperationException("No se pudo iniciar el host.");
+                }
+                else
+                {
+                    JoinAllocation allocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
+                    if (this == null || leaving) return;
+                    transport.SetRelayServerData(allocation.ToRelayServerData("dtls"));
+                    RoomCode = joinCode;
+                    if (!network.StartClient()) throw new InvalidOperationException("No se pudo iniciar el cliente.");
+                }
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning("Conexión online: " + exception.Message);
+                if (this != null && !leaving)
+                {
+                    message = InternetError(exception);
+                    if (network.IsListening) StartCoroutine(Leave(message));
+                }
+            }
+            finally
+            {
+                if (this != null && !network.IsListening) connecting = false;
+            }
+        }
+
+        static string InternetError(Exception exception)
+        {
+            if (exception is RelayServiceException error)
+            {
+                if (error.Reason == RelayExceptionReason.JoinCodeNotFound
+                    || error.Reason == RelayExceptionReason.AllocationNotFound
+                    || error.Reason == RelayExceptionReason.EntityNotFound)
+                    return "Código incorrecto o partida cerrada. Pedile al host un código nuevo.";
+                if (error.Reason == RelayExceptionReason.RateLimited)
+                    return "Demasiados intentos. Esperá unos segundos y volvé a probar.";
+                if (error.Reason == RelayExceptionReason.InvalidArgument || error.Reason == RelayExceptionReason.InvalidRequest)
+                    return "Revisá el código e intentá nuevamente.";
+            }
+            return "No se pudo conectar online. Revisá Internet, el código y que la sala siga abierta y tenga lugar.";
+        }
+
+        void ClientStarted()
+        {
+            if (!network.IsServer)
+                network.NetworkTimeSystem.ServerBufferSec = 2.0 / network.NetworkConfig.TickRate;
         }
 
         void Connected(ulong clientId)
@@ -128,7 +226,6 @@ namespace HeatRise
             OnConnected?.Invoke();
         }
 
-        /// Cancels an in-progress client connection attempt. Used by the pre-connect uGUI screen; no-op once connected.
         public void CancelConnect()
         {
             if (connecting) StartCoroutine(Leave(""));
@@ -141,14 +238,16 @@ namespace HeatRise
             string reason = network.DisconnectReason;
             StartCoroutine(Leave(string.IsNullOrWhiteSpace(reason)
                 ? connecting
-                    ? $"No se pudo conectar a {transport.ConnectionData.Address}:{port}. Revisa misma red, IP actual del host, firewall y misma version del juego."
-                    : "Se perdio la conexion con el host. Revisa que siga abierto y conectado a la misma red."
+                    ? useInternet ? "No se pudo entrar. Revisá código, conexión y misma versión del juego."
+                        : $"No se pudo conectar a {transport.ConnectionData.Address}:{port}. Revisa misma red, IP actual del host, firewall y misma version del juego."
+                    : "Se perdió la conexión con el host. Revisá que siga abierto y conectado."
                 : reason));
         }
 
         void TransportFailed()
         {
-            if (!leaving) StartCoroutine(Leave($"No se pudo usar la conexion de red o el puerto UDP {port}."));
+            if (!leaving) StartCoroutine(Leave(useInternet ? "Falló la conexión online. Revisá Internet e intentá nuevamente."
+                : $"No se pudo usar la conexion de red o el puerto UDP {port}."));
         }
 
         IEnumerator Leave(string reason)
@@ -157,10 +256,10 @@ namespace HeatRise
             leaving = true;
             previousMessage = reason;
             string scene = SceneManager.GetActiveScene().name;
+            while (openingConnection != null && !openingConnection.IsCompleted) yield return null;
+            RoomCode = "";
             network.Shutdown();
             while (network.ShutdownInProgress) yield return null;
-            Destroy(network.gameObject);
-            yield return null;
             Time.timeScale = 1f;
             SceneManager.LoadScene(scene);
         }
@@ -173,11 +272,17 @@ namespace HeatRise
             network.OnClientConnectedCallback -= Connected;
             network.OnClientDisconnectCallback -= Disconnected;
             network.OnTransportFailure -= TransportFailed;
+            network.OnClientStarted -= ClientStarted;
         }
 
         void OnGUI()
         {
-            if (leaving || GameManager.Instance != null && GameManager.Instance.HelpOpen) return;
+            if (leaving)
+            {
+                GUI.Box(new Rect((Screen.width - 300f) * 0.5f, (Screen.height - 60f) * 0.5f, 300f, 60f), "Cerrando conexión...");
+                return;
+            }
+            if (GameManager.Instance != null && GameManager.Instance.HelpOpen) return;
             if (title == null)
             {
                 title = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold };
@@ -186,7 +291,7 @@ namespace HeatRise
             NetworkRace race = NetworkRace.Instance;
             NetworkPlayer local = race.LocalPlayer;
             bool connected = network.IsConnectedClient && race.IsSpawned;
-            if (!connected) return; // pre-connect screen is the uGUI LanMenuView, not IMGUI
+            if (!connected) return;
             if (connected && race.Racing && local != null && local.Alive.Value
                 && !GameManager.Instance.MenuOpen) return;
             float width = Mathf.Min(520f, Screen.width - 32f);
@@ -195,7 +300,7 @@ namespace HeatRise
             GUI.Box(panel, GUIContent.none);
             GUILayout.BeginArea(new Rect(panel.x + 22f, panel.y + 18f, width - 44f, height - 36f));
             GUILayout.BeginHorizontal();
-            GUILayout.Label("HEAT RISE · LAN " + Version, title);
+            GUILayout.Label("HEAT RISE · " + Version, title);
             if (GUILayout.Button(new GUIContent("?", "Controles y ayuda"), GUILayout.Width(36f), GUILayout.Height(36f)))
                 GameManager.Instance.ShowHelp();
             GUILayout.EndHorizontal();
@@ -203,7 +308,17 @@ namespace HeatRise
             {
                 if (race.InLobby)
                 {
-                    if (network.IsHost)
+                    if (useInternet)
+                    {
+                        GUILayout.BeginHorizontal();
+                        GUILayout.Label(string.IsNullOrEmpty(RoomCode) ? "Preparando código..." : "Código: " + RoomCode, textStyle);
+                        GUI.enabled = !string.IsNullOrEmpty(RoomCode);
+                        if (GUILayout.Button("Copiar", GUILayout.Width(80f), GUILayout.Height(30f)))
+                            GUIUtility.systemCopyBuffer = RoomCode;
+                        GUI.enabled = true;
+                        GUILayout.EndHorizontal();
+                    }
+                    else if (network.IsHost)
                     {
                         GUILayout.BeginHorizontal();
                         GUILayout.Label("IP de este host: " + addresses + " · Puerto " + port, textStyle);
