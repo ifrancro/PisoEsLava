@@ -4,7 +4,6 @@ using UnityEngine.EventSystems;
 
 namespace HeatRise.UI
 {
-    /// Scales a target RectTransform on hover/press, matching the mock's transform:scale hover/active states.
     public sealed class UIHoverPress : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
     {
         public RectTransform target;

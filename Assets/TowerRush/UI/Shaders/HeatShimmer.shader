@@ -1,7 +1,5 @@
 Shader "HeatRise/UI/HeatShimmer"
 {
-    // Slowly drifting lava texture, screen-blended over the menu background, subtle intensity so it
-    // reads as heat shimmer rather than a solid image. Mirrors the mock's `shimmerMove` keyframe.
     Properties
     {
         [PerRendererData] _MainTex ("Lava Texture", 2D) = "white" {}

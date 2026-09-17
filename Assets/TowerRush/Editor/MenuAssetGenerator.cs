@@ -4,17 +4,11 @@ using UnityEngine;
 
 namespace HeatRise.EditorTools
 {
-    /// Procedurally bakes the rounded-rect / ring / circle sprites and background gradients the LAN
-    /// menu uses, so the arcade look needs no external image assets beyond the imported fonts.
-    /// One texture pixel == one design pixel at the 1600x900 reference canvas, so sprite borders can
-    /// be set to the handoff's exact radius/stroke values (14px, 10px, 8px, 2px).
     public static class MenuAssetGenerator
     {
         const string OutDir = "Assets/TowerRush/UI/Sprites/Generated";
         public const string LavaTexturePath = "Assets/TowerRush/UI/Textures/textura_lava.png";
 
-        /// Ensures the user-provided lava photo is imported for tiling/scrolling use in a shader
-        /// (not as a UI Sprite): Repeat wrap so the scroll doesn't clamp-stretch at the seam.
         public static void EnsureLavaTextureImport()
         {
             TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(LavaTexturePath);
@@ -55,7 +49,6 @@ namespace HeatRise.EditorTools
             Debug.Log("[MenuAssetGenerator] Generated sprites in " + OutDir);
         }
 
-        // Per-corner rounded rect SDF (Inigo Quilez form), radii in texture-space pixels: tl/tr top-left/right, bl/br bottom-left/right.
         static float SdRoundBox(Vector2 p, Vector2 halfSize, float tl, float tr, float bl, float br)
         {
             float rTop = p.x > 0f ? tr : tl;
@@ -106,7 +99,7 @@ namespace HeatRise.EditorTools
             Color32[] pixels = new Color32[size * size];
             for (int y = 0; y < size; y++)
             {
-                Color rowColor = Color.Lerp(bottom, top, y / (float)(size - 1)); // texture row 0 = bottom (UV origin)
+                Color rowColor = Color.Lerp(bottom, top, y / (float)(size - 1));
                 for (int x = 0; x < size; x++)
                 {
                     Vector2 p = new Vector2(x + 0.5f - half.x, y + 0.5f - half.y);
@@ -152,7 +145,7 @@ namespace HeatRise.EditorTools
                 {
                     float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), center) / radius;
                     float a = 1f - Mathf.Clamp01(d);
-                    a *= a; // steeper soft falloff for a glow/spark look
+                    a *= a;
                     pixels[y * size + x] = new Color(1f, 1f, 1f, a);
                 }
             tex.SetPixels32(pixels);
@@ -166,7 +159,7 @@ namespace HeatRise.EditorTools
             Color32[] pixels = new Color32[width * height];
             for (int y = 0; y < height; y++)
             {
-                float t = 1f - y / (float)(height - 1); // texture row 0 = top = design 0%
+                float t = 1f - y / (float)(height - 1);
                 Color c = stops[0].color;
                 for (int i = 0; i < stops.Length - 1; i++)
                 {

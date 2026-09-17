@@ -5,10 +5,6 @@ using UnityEngine;
 
 namespace HeatRise.EditorTools
 {
-    /// Batchmode Play Mode smoke test for the LAN menu: enters Play, lets the entrance animations and
-    /// first frames run for a few seconds, grabs a screenshot, then exits Play and quits. Runs across
-    /// the domain reload that entering Play Mode triggers via SessionState (survives reload) and an
-    /// [InitializeOnLoad] update pump (re-registers itself after reload).
     [InitializeOnLoad]
     public static class MenuPlaytest
     {

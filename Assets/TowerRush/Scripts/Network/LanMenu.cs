@@ -28,18 +28,13 @@ namespace HeatRise
         public string joinCode = "";
         public string RoomCode { get; private set; } = "";
 
-        /// Fires once when the local client finishes connecting (host or client). Menu UI uses this to switch away from the pre-connect screen.
-        public event System.Action OnConnected;
-
+        const string Version = "3.0";
+        const string Protocol = "HeatRise-LAN-" + Version;
+        public event Action OnConnected;
         public bool Connecting => connecting;
         public bool IsConnected => network != null && network.IsConnectedClient;
         public string Message => message;
         public string Addresses => addresses;
-
-        const string Version = "3.0";
-
-        const string Protocol = "HeatRise-LAN-" + Version;
-        static readonly string[] ConnectionModes = { "Internet · código", "LAN · misma red" };
         readonly Dictionary<ulong, int> slots = new Dictionary<ulong, int>();
         static string previousMessage = "";
         string message;
@@ -231,7 +226,6 @@ namespace HeatRise
             OnConnected?.Invoke();
         }
 
-        /// Cancels an in-progress client connection attempt. Used by the pre-connect uGUI screen; no-op once connected.
         public void CancelConnect()
         {
             if (connecting) StartCoroutine(Leave(""));
@@ -266,8 +260,6 @@ namespace HeatRise
             RoomCode = "";
             network.Shutdown();
             while (network.ShutdownInProgress) yield return null;
-            Destroy(network.gameObject);
-            yield return null;
             Time.timeScale = 1f;
             SceneManager.LoadScene(scene);
         }
@@ -299,7 +291,7 @@ namespace HeatRise
             NetworkRace race = NetworkRace.Instance;
             NetworkPlayer local = race.LocalPlayer;
             bool connected = network.IsConnectedClient && race.IsSpawned;
-            if (!connected) return; // pre-connect screen is the uGUI LanMenuView, not IMGUI
+            if (!connected) return;
             if (connected && race.Racing && local != null && local.Alive.Value
                 && !GameManager.Instance.MenuOpen) return;
             float width = Mathf.Min(520f, Screen.width - 32f);

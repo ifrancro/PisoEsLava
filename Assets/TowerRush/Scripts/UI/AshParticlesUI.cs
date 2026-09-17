@@ -4,10 +4,6 @@ using UnityEngine.UI;
 
 namespace HeatRise.UI
 {
-    /// Lightweight UGUI stand-in for the mock's rising ash/spark particles (`floatUp` keyframe):
-    /// small glowing dots drifting up from the bottom edge, fading in/out, looping forever.
-    /// Plain Image instances instead of a world-space ParticleSystem so it composites cleanly under
-    /// a single Screen Space - Overlay canvas with no extra camera.
     public sealed class AshParticlesUI : MonoBehaviour
     {
         public Sprite sprite;

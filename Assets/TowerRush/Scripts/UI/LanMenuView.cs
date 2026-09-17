@@ -8,9 +8,6 @@ using UnityEngine.UI;
 
 namespace HeatRise.UI
 {
-    /// uGUI presentation for the pre-connect LAN menu screen (title/solo/host/join). Pure view: all
-    /// networking stays in <see cref="LanMenu"/>. Hidden once a connection is established, handing
-    /// off to the existing IMGUI lobby/race HUD.
     public sealed class LanMenuView : MonoBehaviour
     {
         enum IpStatus { Idle, Checking, Valid, Invalid }
@@ -25,6 +22,7 @@ namespace HeatRise.UI
         public CanvasGroup titleGroup;
         public RectTransform subtitle;
         public CanvasGroup subtitleGroup;
+        public TMP_Text subtitleText;
         public RectTransform hostBlock;
         public CanvasGroup hostBlockGroup;
         public RectTransform joinBlock;
@@ -33,17 +31,25 @@ namespace HeatRise.UI
         [Header("Solo")]
         public Button soloButton;
 
+        [Header("Connection mode")]
+        public Button internetButton;
+        public Image internetButtonFill;
+        public Button lanButton;
+        public Image lanButtonFill;
+
         [Header("Host")]
         public Button hostButton;
         public Image hostButtonFill;
         public AccordionPanel hostPanel;
         public TMP_Text hostAddressText;
+        public TMP_Text hostHelpText;
 
         [Header("Join")]
         public Button joinButton;
         public Image joinButtonFill;
         public AccordionPanel joinPanel;
         public TMP_InputField ipInput;
+        public TMP_Text joinHelpText;
         public Image ipInputBorder;
         public Image statusDot;
         public TMP_Text hintText;
@@ -80,6 +86,8 @@ namespace HeatRise.UI
         void Awake()
         {
             soloButton.onClick.AddListener(PlaySolo);
+            internetButton.onClick.AddListener(() => SelectMode(true));
+            lanButton.onClick.AddListener(() => SelectMode(false));
             hostButton.onClick.AddListener(ToggleHost);
             joinButton.onClick.AddListener(ToggleJoin);
             connectButton.onClick.AddListener(OnConnectPressed);
@@ -98,14 +106,13 @@ namespace HeatRise.UI
 
         void Start()
         {
-            portText.text = "Puerto UDP: " + lanMenu.port;
-            SetIpStatus(IpStatus.Idle);
+            SelectMode(true);
             statusText.text = lanMenu.Message;
 
-            StartCoroutine(UiTween.SlideAndFade(title, titleGroup, new Vector2(0f, 18f), 0.6f, 0f));
-            StartCoroutine(UiTween.SlideAndFade(subtitle, subtitleGroup, new Vector2(0f, 26f), 0.5f, 0.1f));
-            StartCoroutine(UiTween.SlideAndFade(hostBlock, hostBlockGroup, new Vector2(0f, 26f), 0.5f, 0.3f));
-            StartCoroutine(UiTween.SlideAndFade(joinBlock, joinBlockGroup, new Vector2(0f, 26f), 0.5f, 0.4f));
+            titleGroup.alpha = 1f;
+            subtitleGroup.alpha = 1f;
+            hostBlockGroup.alpha = 1f;
+            joinBlockGroup.alpha = 1f;
         }
 
         void Update()
@@ -113,6 +120,8 @@ namespace HeatRise.UI
             bool connecting = lanMenu.Connecting;
             soloButton.interactable = !connecting;
             hostButton.interactable = !connecting;
+            internetButton.interactable = !connecting;
+            lanButton.interactable = !connecting;
             statusText.text = connecting ? lanMenu.Message : string.IsNullOrEmpty(lanMenu.Message) ? "" : lanMenu.Message;
             connectButtonLabel.text = connecting ? "CANCELAR" : "CONECTAR";
             connectButton.interactable = connecting || ipStatus == IpStatus.Valid;
@@ -135,7 +144,7 @@ namespace HeatRise.UI
                 joinPanel.SetExpanded(false);
                 joinButtonFill.sprite = round14All;
                 joinButtonFill.color = secondaryIdleColor;
-                hostAddressText.text = "Puerto UDP: " + lanMenu.port;
+                hostAddressText.text = lanMenu.useInternet ? "Creando código..." : "Puerto UDP: " + lanMenu.port;
                 lanMenu.CreateMatch();
             }
             hostPanel.SetExpanded(hostExpanded);
@@ -166,7 +175,8 @@ namespace HeatRise.UI
                 return;
             }
             if (ipStatus != IpStatus.Valid) return;
-            lanMenu.hostAddress = ipInput.text.Trim();
+            if (lanMenu.useInternet) lanMenu.joinCode = ipInput.text.Trim().ToUpperInvariant();
+            else lanMenu.hostAddress = ipInput.text.Trim();
             lanMenu.JoinMatch();
         }
 
@@ -180,10 +190,43 @@ namespace HeatRise.UI
         IEnumerator ValidateAfterDelay(string value)
         {
             yield return new WaitForSecondsRealtime(0.5f);
-            bool valid = IPAddress.TryParse(value.Trim(), out IPAddress address)
+            string input = value.Trim();
+            bool valid = lanMenu.useInternet ? IsValidCode(input) : IPAddress.TryParse(input, out IPAddress address)
                 && address.AddressFamily == AddressFamily.InterNetwork
                 && !address.Equals(IPAddress.Any) && !address.Equals(IPAddress.Broadcast);
             SetIpStatus(valid ? IpStatus.Valid : IpStatus.Invalid);
+        }
+
+        static bool IsValidCode(string value)
+        {
+            if (value.Length != 6) return false;
+            for (int i = 0; i < value.Length; i++)
+                if (!char.IsLetterOrDigit(value[i])) return false;
+            return true;
+        }
+
+        void SelectMode(bool internet)
+        {
+            if (lanMenu.Connecting) return;
+            lanMenu.useInternet = internet;
+            internetButtonFill.color = internet ? secondaryActiveColor : secondaryIdleColor;
+            lanButtonFill.color = internet ? secondaryIdleColor : secondaryActiveColor;
+            subtitleText.text = internet ? "2 a 4 jugadores desde cualquier red" : "2 a 4 jugadores en la misma red";
+            hostHelpText.text = internet ? "Crea la partida y comparte el código." : "Comparte tu IP con los demás jugadores.";
+            joinHelpText.text = internet ? "Escribe el código que compartió el host." : "Escribe la IP de la computadora host.";
+            portText.text = internet ? "CONEXIÓN ONLINE POR CÓDIGO" : "Puerto UDP: " + lanMenu.port;
+            ipInput.characterLimit = internet ? 6 : 45;
+            ((TMP_Text)ipInput.placeholder).text = internet ? "ABC123" : "192.168.1.20";
+            ipInput.text = "";
+            SetIpStatus(IpStatus.Idle);
+            StartCoroutine(RebuildLayout());
+        }
+
+        IEnumerator RebuildLayout()
+        {
+            yield return null;
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)subtitle.parent);
         }
 
         void SetIpStatus(IpStatus status)
@@ -195,13 +238,13 @@ namespace HeatRise.UI
                 case IpStatus.Idle:
                     statusDot.color = IdleColor;
                     ipInputBorder.color = IdleColor;
-                    hintText.text = "Escribe la IP del host.";
+                    hintText.text = lanMenu.useInternet ? "Código de 6 caracteres." : "Escribe la IP del host.";
                     hintText.color = HintIdle;
                     break;
                 case IpStatus.Checking:
                     statusDot.color = CheckingColor;
                     ipInputBorder.color = IdleColor;
-                    hintText.text = "Verificando formato...";
+                    hintText.text = "Verificando...";
                     hintText.color = CheckingColor;
                     dotPulse = StartCoroutine(UiTween.PingPong(this, 0.7f, t =>
                     {
@@ -213,13 +256,13 @@ namespace HeatRise.UI
                 case IpStatus.Valid:
                     statusDot.color = ValidColor;
                     ipInputBorder.color = ValidColor;
-                    hintText.text = "IP valida.";
+                    hintText.text = lanMenu.useInternet ? "Código válido." : "IP válida.";
                     hintText.color = HintValid;
                     break;
                 case IpStatus.Invalid:
                     statusDot.color = InvalidColor;
                     ipInputBorder.color = InvalidColor;
-                    hintText.text = "Formato de IP invalido.";
+                    hintText.text = lanMenu.useInternet ? "Código inválido." : "Formato de IP inválido.";
                     hintText.color = HintInvalid;
                     break;
             }

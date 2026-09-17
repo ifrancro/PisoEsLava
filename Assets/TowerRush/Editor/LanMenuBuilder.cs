@@ -8,9 +8,6 @@ using UnityEngine.UI;
 
 namespace HeatRise.EditorTools
 {
-    /// Builds the pre-connect LAN menu Canvas hierarchy in HeatRise_LAN.unity from the generated
-    /// sprites/fonts and wires it to a new LanMenuView component. Re-runnable: deletes and rebuilds
-    /// only the "LanMenuCanvas" root it owns, leaving the rest of the scene untouched.
     public sealed class LanMenuBuilder
     {
         const string ScenePath = "Assets/TowerRush/Scenes/HeatRise_LAN.unity";
@@ -189,8 +186,11 @@ namespace HeatRise.EditorTools
             RectTransform subtitleRt = BuildSubtitle(top);
             view.subtitle = subtitleRt;
             view.subtitleGroup = subtitleRt.gameObject.AddComponent<CanvasGroup>();
+            view.subtitleText = subtitleRt.GetComponentInChildren<TMP_Text>();
 
-            Spacer(top, 34f);
+            Spacer(top, 18f);
+            BuildModeSwitch(top, view);
+            Spacer(top, 22f);
 
             RectTransform stack = NewChild("ButtonStack", top).GetComponent<RectTransform>();
             LayoutElement stackLe = stack.gameObject.AddComponent<LayoutElement>();
@@ -259,6 +259,24 @@ namespace HeatRise.EditorTools
             view.soloButton = refs.button;
         }
 
+        void BuildModeSwitch(Transform parent, LanMenuView view)
+        {
+            RectTransform row = NewChild("ConnectionMode", parent).GetComponent<RectTransform>();
+            row.gameObject.AddComponent<LayoutElement>().preferredHeight = 44f;
+            HorizontalLayoutGroup layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+            layout.spacing = 10f;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+
+            ButtonRefs internet = CreateButtonSlot(row, "InternetButton", 44f, false, _round10All, SecondaryIdle, ShadowSecondary, "INTERNET · CÓDIGO", _nunitoExtra, 15f);
+            ButtonRefs lan = CreateButtonSlot(row, "LanButton", 44f, false, _round10All, SecondaryIdle, ShadowSecondary, "LAN · MISMA RED", _nunitoExtra, 15f);
+            view.internetButton = internet.button;
+            view.internetButtonFill = internet.fill;
+            view.lanButton = lan.button;
+            view.lanButtonFill = lan.fill;
+        }
+
         void BuildHostBlock(Transform parent, LanMenuView view)
         {
             RectTransform block = NewChild("HostBlock", parent).GetComponent<RectTransform>();
@@ -299,7 +317,7 @@ namespace HeatRise.EditorTools
             contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             RectTransform helpRt = NewChild("HelpText", content).GetComponent<RectTransform>();
-            AddText(helpRt, "Tu controlas la partida - comparte tu IP con los demas.", _nunitoSemi, 14f, SubtitleColor, TextAlignmentOptions.Left);
+            view.hostHelpText = AddText(helpRt, "Crea la partida y comparte el código.", _nunitoSemi, 14f, SubtitleColor, TextAlignmentOptions.Left);
             helpRt.gameObject.AddComponent<LayoutElement>().preferredHeight = 20f;
 
             RectTransform row = NewChild("Row", content).GetComponent<RectTransform>();
@@ -363,7 +381,7 @@ namespace HeatRise.EditorTools
             contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             RectTransform helpRt = NewChild("HelpText", content).GetComponent<RectTransform>();
-            AddText(helpRt, "Pide la IP a quien creo la partida.", _nunitoSemi, 14f, SubtitleColor, TextAlignmentOptions.Left);
+            view.joinHelpText = AddText(helpRt, "Escribe el código que compartió el host.", _nunitoSemi, 14f, SubtitleColor, TextAlignmentOptions.Left);
             helpRt.gameObject.AddComponent<LayoutElement>().preferredHeight = 20f;
 
             RectTransform row = NewChild("Row", content).GetComponent<RectTransform>();
@@ -437,7 +455,7 @@ namespace HeatRise.EditorTools
             field.textComponent = text;
             field.placeholder = placeholder;
             field.characterLimit = 45;
-            field.text = "192.168.1.20";
+            field.text = "";
             view.ipInput = field;
             return rt;
         }

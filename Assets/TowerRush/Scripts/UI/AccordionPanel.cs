@@ -4,8 +4,6 @@ using UnityEngine.UI;
 
 namespace HeatRise.UI
 {
-    /// Expands/collapses a panel's height (clipped via RectMask2D) and fades it, matching the mock's
-    /// accordion toggle on the host/join buttons (~0.25s).
     [RequireComponent(typeof(LayoutElement))]
     public sealed class AccordionPanel : MonoBehaviour
     {
@@ -48,8 +46,6 @@ namespace HeatRise.UI
                 float e = UiTween.EaseOutCubic(t);
                 clip.preferredHeight = Mathf.LerpUnclamped(start, target, e);
                 if (group != null) group.alpha = show ? e : 1f - e;
-                // Changing a LayoutElement value doesn't dirty the parent VerticalLayoutGroup on its
-                // own - without this, sibling blocks keep their pre-animation position and overlap.
                 LayoutRebuilder.MarkLayoutForRebuild(rt);
             });
         }

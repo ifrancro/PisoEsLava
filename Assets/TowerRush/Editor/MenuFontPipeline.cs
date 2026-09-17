@@ -6,8 +6,6 @@ using UnityEngine.TextCore.LowLevel;
 
 namespace HeatRise.EditorTools
 {
-    /// Imports TMP Essentials and bakes the Fredoka/Nunito Sans static-weight TTFs (downloaded into
-    /// Assets/TowerRush/Fonts/TTF) into TMP Font Assets, non-interactively.
     public static class MenuFontPipeline
     {
         const string TtfDir = "Assets/TowerRush/Fonts/TTF";
@@ -31,10 +29,6 @@ namespace HeatRise.EditorTools
                 return;
             }
 
-            // TMP_PackageResourceImporter.GetPackageFullPath() only finds the package via a literal
-            // "Packages/com.unity.textmeshpro" folder or by scanning for an already-imported
-            // "TextMesh Pro" folder - neither exists for a UPM registry package pre-import, so it
-            // silently resolves to null. Import directly from the resolved PackageCache path instead.
             string packagePath = FindTmpPackageCachePath();
             if (packagePath == null)
             {
