@@ -8,10 +8,6 @@ using UnityEngine.UI;
 
 namespace HeatRise.EditorTools
 {
-    /// Builds the solo-play pause/results panel in HeatRise_Jugable.unity, reusing the sprites and
-    /// TMP font assets already baked for the LAN menu (Assets/TowerRush/UI/Sprites/Generated,
-    /// Assets/TowerRush/Fonts/TMP) so both screens share the same look with no new asset generation.
-    /// Re-runnable: deletes and rebuilds only the "PauseCanvas" root it owns.
     public sealed class PauseMenuBuilder
     {
         const string ScenePath = "Assets/TowerRush/Scenes/HeatRise_Jugable.unity";
@@ -25,7 +21,7 @@ namespace HeatRise.EditorTools
         static readonly Color32 AccentColor = new Color32(0xff, 0xcf, 0x9a, 0xff);
         static readonly Color32 DimColor = new Color32(0x0a, 0x05, 0x04, 0x99);
 
-        Sprite _round14All, _round14Cta, _ring14, _round10All;
+        Sprite _round14All, _round14Cta, _ring14, _round10All, _circle;
         TMP_FontAsset _fredokaBold, _nunitoSemi, _nunitoExtra;
         Texture2D _lavaTexture;
 
@@ -84,6 +80,7 @@ namespace HeatRise.EditorTools
             _round14Cta = Load<Sprite>(SpriteDir + "/Round14CTA.png");
             _ring14 = Load<Sprite>(SpriteDir + "/Ring14.png");
             _round10All = Load<Sprite>(SpriteDir + "/Round10All.png");
+            _circle = Load<Sprite>(SpriteDir + "/Circle.png");
             _fredokaBold = Load<TMP_FontAsset>(FontDir + "/Fredoka-Bold SDF.asset");
             _nunitoSemi = Load<TMP_FontAsset>(FontDir + "/NunitoSans-SemiBold SDF.asset");
             _nunitoExtra = Load<TMP_FontAsset>(FontDir + "/NunitoSans-ExtraBold SDF.asset");
@@ -135,6 +132,7 @@ namespace HeatRise.EditorTools
             HorizontalLayoutGroup headerLayout = header.gameObject.AddComponent<HorizontalLayoutGroup>();
             headerLayout.childAlignment = TextAnchor.MiddleLeft;
             headerLayout.childControlHeight = true;
+            headerLayout.childForceExpandWidth = false;
             header.gameObject.AddComponent<LayoutElement>().preferredHeight = 40f;
 
             RectTransform titleRt = NewChild("Title", header);
@@ -142,7 +140,7 @@ namespace HeatRise.EditorTools
             titleRt.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
             view.titleText = title;
 
-            view.helpButton = CreateButton(header, "HelpButton", 36f, 36f, _round10All, SecondaryIdle, "?", _nunitoExtra, 16f).button;
+            view.helpButton = CreateButton(header, "HelpButton", 36f, 36f, _circle, SecondaryIdle, "?", _nunitoExtra, 16f).button;
 
             RectTransform msgRt = NewChild("Message", card);
             TMP_Text msg = AddText(msgRt, "", _nunitoSemi, 14f, BodyColor, TextAlignmentOptions.Left);

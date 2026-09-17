@@ -8,9 +8,6 @@ using UnityEngine.UI;
 
 namespace HeatRise.EditorTools
 {
-    /// Builds the pre-connect LAN menu Canvas hierarchy in HeatRise_LAN.unity from the generated
-    /// sprites/fonts and wires it to a new LanMenuView component. Re-runnable: deletes and rebuilds
-    /// only the "LanMenuCanvas" root it owns, leaving the rest of the scene untouched.
     public sealed class LanMenuBuilder
     {
         const string ScenePath = "Assets/TowerRush/Scenes/HeatRise_LAN.unity";

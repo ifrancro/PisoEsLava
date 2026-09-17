@@ -171,7 +171,7 @@ namespace HeatRise
             if (Online && (!IsPlaying || paused)) return;
             if (!showHud && !paused && !finished) return;
 
-            if (paused || finished) return; // pause/results panel is the uGUI PauseMenuView, not IMGUI
+            if (paused || finished) return;
 
             if (player == null) return;
             Rect safe = Screen.safeArea;

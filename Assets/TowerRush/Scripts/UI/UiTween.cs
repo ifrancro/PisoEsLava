@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace HeatRise.UI
 {
-    /// Coroutine-based tween helpers shared by the LAN menu screen. Avoids a DOTween dependency.
     public static class UiTween
     {
         public static float EaseOutCubic(float t) => 1f - Mathf.Pow(1f - t, 3f);
@@ -56,7 +55,6 @@ namespace HeatRise.UI
             }, null, delay);
         }
 
-        /// Continuous ping-pong loop calling setter with a 0..1 value, until the returned coroutine is stopped externally.
         public static IEnumerator PingPong(MonoBehaviour owner, float period, Action<float> setter)
         {
             while (true)

@@ -6,9 +6,6 @@ using UnityEngine;
 
 namespace HeatRise.EditorTools
 {
-    /// Re-opens the saved scene and reflects over every public field on LanMenuView to catch any
-    /// unwired (null) reference the builder left behind - cheaper and more reliable in batchmode
-    /// than a full Play Mode + screenshot pass.
     public static class MenuVerify
     {
         const string ScenePath = "Assets/TowerRush/Scenes/HeatRise_LAN.unity";

@@ -6,8 +6,6 @@ using UnityEngine.UI;
 
 namespace HeatRise.UI
 {
-    /// Full-screen "lava circle" wipe used to hide the jump cut when leaving the pre-connect menu,
-    /// matching the mock's `meltWipe` clip-path animation.
     public sealed class MeltTransition : MonoBehaviour
     {
         public Image image;

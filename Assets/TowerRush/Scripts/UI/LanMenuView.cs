@@ -8,9 +8,6 @@ using UnityEngine.UI;
 
 namespace HeatRise.UI
 {
-    /// uGUI presentation for the pre-connect LAN menu screen (title/solo/host/join). Pure view: all
-    /// networking stays in <see cref="LanMenu"/>. Hidden once a connection is established, handing
-    /// off to the existing IMGUI lobby/race HUD.
     public sealed class LanMenuView : MonoBehaviour
     {
         enum IpStatus { Idle, Checking, Valid, Invalid }
@@ -222,6 +219,14 @@ namespace HeatRise.UI
             ((TMP_Text)ipInput.placeholder).text = internet ? "ABC123" : "192.168.1.20";
             ipInput.text = "";
             SetIpStatus(IpStatus.Idle);
+            StartCoroutine(RebuildLayout());
+        }
+
+        IEnumerator RebuildLayout()
+        {
+            yield return null;
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)subtitle.parent);
         }
 
         void SetIpStatus(IpStatus status)

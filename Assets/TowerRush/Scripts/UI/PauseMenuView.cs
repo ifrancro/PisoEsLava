@@ -6,9 +6,6 @@ using UnityEngine.UI;
 
 namespace HeatRise.UI
 {
-    /// uGUI presentation for the solo-play pause/results panel (GameManager.paused/finished). Smaller
-    /// and simpler than the LAN menu screen - just the card, its texts and three buttons - but keeps
-    /// the same palette, fonts and micro-interactions (hover/press, fade+pop) for visual consistency.
     public sealed class PauseMenuView : MonoBehaviour
     {
         [Header("Wiring")]

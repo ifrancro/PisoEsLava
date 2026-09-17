@@ -4,7 +4,6 @@ using UnityEngine.UI;
 
 namespace HeatRise.UI
 {
-    /// Loops a graphic's alpha between two values, matching the mock's glowPulse/dotPulse keyframe loops.
     public sealed class GlowPulse : MonoBehaviour
     {
         public Graphic target;
