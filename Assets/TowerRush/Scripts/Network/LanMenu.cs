@@ -305,6 +305,10 @@ namespace HeatRise
                 GameManager.Instance.ShowHelp();
             GUILayout.EndHorizontal();
             GUILayout.Space(10f);
+            GUILayout.Space(10f);
+            {
+                if (race.InLobby)
+
             {
                 if (race.InLobby)
                 {
