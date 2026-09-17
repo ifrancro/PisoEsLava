@@ -140,7 +140,15 @@ namespace HeatRise.EditorTools
             titleRt.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
             view.titleText = title;
 
-            view.helpButton = CreateButton(header, "HelpButton", 36f, 36f, _circle, SecondaryIdle, "?", _nunitoExtra, 16f).button;
+            Button help = CreateButton(card, "HelpButton", 36f, 36f, _circle, SecondaryIdle, "?", _nunitoExtra, 16f).button;
+            RectTransform helpRt = (RectTransform)help.transform;
+            helpRt.GetComponent<LayoutElement>().ignoreLayout = true;
+            helpRt.anchorMin = Vector2.one;
+            helpRt.anchorMax = Vector2.one;
+            helpRt.pivot = Vector2.one;
+            helpRt.anchoredPosition = new Vector2(-18f, -18f);
+            helpRt.sizeDelta = new Vector2(36f, 36f);
+            view.helpButton = help;
 
             RectTransform msgRt = NewChild("Message", card);
             TMP_Text msg = AddText(msgRt, "", _nunitoSemi, 14f, BodyColor, TextAlignmentOptions.Left);
