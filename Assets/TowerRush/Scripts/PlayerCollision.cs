@@ -38,11 +38,9 @@ namespace HeatRise
         void LateUpdate()
         {
             if (!player.Simulates || !GameManager.Playing) return;
-            int index = players.IndexOf(this);
-            for (int i = index + 1; i < players.Count; i++)
+            foreach (PlayerCollision other in players)
             {
-                PlayerCollision other = players[i];
-                if (!other.player.Simulates || !other.body.enabled) continue;
+                if (other == this || other.body == null || !other.player.IsAlive) continue;
                 float spacing = Spacing(transform.position, body.height, body.radius,
                     other.transform.position, other.body.height, other.body.radius);
                 if (spacing <= 0f) continue;
@@ -53,15 +51,7 @@ namespace HeatRise
                 if (overlap <= 0f) continue;
                 Vector3 direction = distance > 0.0001f ? delta / distance : Vector3.right;
                 float correction = Mathf.Min(overlap + 0.002f, 0.4f);
-                Vector3 before = transform.position;
-                body.Move(direction * (correction * 0.5f));
-                float moved = Mathf.Max(0f, Vector3.Dot(transform.position - before, direction));
-                before = other.transform.position;
-                other.body.Move(-direction * (correction - moved));
-                float otherMoved = Mathf.Max(0f, Vector3.Dot(before - other.transform.position, direction));
-                float remaining = correction - moved - otherMoved;
-                if (remaining > 0.001f) body.Move(direction * remaining);
-                other.player.RefreshSupportPoint();
+                body.Move(direction * correction);
             }
             player.RefreshSupportPoint();
         }
@@ -70,7 +60,7 @@ namespace HeatRise
         {
             foreach (PlayerCollision other in players)
             {
-                if (other == this || !other.player.Simulates || !other.body.enabled) continue;
+                if (other == this || !other.player.IsAlive) continue;
                 float spacing = Spacing(transform.position, height, radius,
                     other.transform.position, other.body.height, other.body.radius);
                 Vector3 delta = transform.position - other.transform.position;

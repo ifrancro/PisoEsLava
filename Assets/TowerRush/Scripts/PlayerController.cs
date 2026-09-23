@@ -30,8 +30,9 @@ namespace HeatRise
         public float Radius => controller.radius;
         public int CheckpointOrder => checkpoint != null ? checkpoint.order : 0;
         public bool Simulates => networkPlayer == null || networkPlayer.IsSpawned
-            && networkPlayer.IsServer && networkPlayer.Alive.Value;
+            && networkPlayer.IsOwner && networkPlayer.Alive.Value;
         public bool IsLocal => networkPlayer == null || networkPlayer.IsOwner;
+        public bool IsAlive => networkPlayer == null || networkPlayer.Alive.Value;
 
         readonly Collider[] overlaps = new Collider[32];
         CharacterController controller;
@@ -182,6 +183,7 @@ namespace HeatRise
             if (checkpoint != null && value.order <= checkpoint.order) return;
             if (value.GetRespawnPoint(this) == null) return;
             checkpoint = value;
+            networkPlayer?.SaveCheckpointRpc(value.order);
             Notify("Checkpoint guardado.");
         }
 
@@ -301,13 +303,6 @@ namespace HeatRise
         {
             if (grounded && support != null)
                 supportLocalPoint = support.InverseTransformPoint(transform.position);
-        }
-
-        public void ApplyRemoteTimers(Vector3 timers)
-        {
-            AbilityRemaining = timers.x;
-            SmallCooldown = timers.y;
-            LargeCooldown = timers.z;
         }
 
         void PushBlock()

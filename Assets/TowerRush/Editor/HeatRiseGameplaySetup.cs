@@ -198,7 +198,7 @@ namespace HeatRise.EditorTools
             templatePlayer.view = null;
             templatePlayer.model.localRotation = Quaternion.identity;
             template.AddComponent<NetworkObject>();
-            NetworkTransform sync = template.AddComponent<NetworkTransform>();
+            NetworkTransform sync = template.AddComponent<OwnerNetworkTransform>();
             sync.Interpolate = true;
             sync.UseUnreliableDeltas = true;
             sync.PositionThreshold = 0.01f;

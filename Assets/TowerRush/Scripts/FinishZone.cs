@@ -10,7 +10,7 @@ namespace HeatRise
             PlayerController player = other.GetComponentInParent<PlayerController>();
             if (!GameManager.Playing || player == null || !player.Simulates) return;
             NetworkPlayer networkPlayer = player.GetComponent<NetworkPlayer>();
-            if (networkPlayer != null) NetworkRace.Instance.TryFinish(networkPlayer);
+            if (networkPlayer != null) networkPlayer.RequestFinish();
             else GameManager.Instance?.Win();
         }
     }
