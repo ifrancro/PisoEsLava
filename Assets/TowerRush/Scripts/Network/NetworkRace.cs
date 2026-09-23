@@ -133,8 +133,18 @@ namespace HeatRise
 
         public void PushBlock(HeavyBlock block)
         {
-            if (!IsServer || !Racing || block.IsMoving || block.HasMoved) return;
-            MoveBlockRpc(block.NetworkIndex, Elapsed);
+            if (!IsSpawned || !Racing || block.IsMoving || block.HasMoved) return;
+            if (IsServer) MoveBlockRpc(block.NetworkIndex, Elapsed);
+            else RequestPushBlockRpc(block.NetworkIndex);
+        }
+
+        [Rpc(SendTo.Server, RequireOwnership = false)]
+        void RequestPushBlockRpc(int index, RpcParams rpc = default)
+        {
+            if (!Racing || index < 0 || index >= blocks.Length) return;
+            HeavyBlock block = blocks[index];
+            if (block.IsMoving || block.HasMoved) return;
+            MoveBlockRpc(index, Elapsed);
         }
 
         [Rpc(SendTo.Everyone, RequireOwnership = true)]
@@ -147,8 +157,18 @@ namespace HeatRise
 
         public void ActivatePlatform(FragilePlatform platform)
         {
-            if (!IsServer || !Racing || platform.Activated) return;
-            BreakPlatformRpc(platform.NetworkIndex, Elapsed + platform.delay);
+            if (!IsSpawned || !Racing || platform.Activated) return;
+            if (IsServer) BreakPlatformRpc(platform.NetworkIndex, Elapsed + platform.delay);
+            else RequestActivatePlatformRpc(platform.NetworkIndex);
+        }
+
+        [Rpc(SendTo.Server, RequireOwnership = false)]
+        void RequestActivatePlatformRpc(int index, RpcParams rpc = default)
+        {
+            if (!Racing || index < 0 || index >= fragilePlatforms.Length) return;
+            FragilePlatform platform = fragilePlatforms[index];
+            if (platform.Activated) return;
+            BreakPlatformRpc(index, Elapsed + platform.delay);
         }
 
         [Rpc(SendTo.Everyone, RequireOwnership = true)]
