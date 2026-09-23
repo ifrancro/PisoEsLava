@@ -220,7 +220,7 @@ namespace HeatRise.EditorTools
             RectTransform rt = NewChild("Title", parent).GetComponent<RectTransform>();
             LayoutElement le = rt.gameObject.AddComponent<LayoutElement>();
             le.preferredHeight = 84f;
-            TMP_Text text = AddText(rt, "TOWERRUSH", _fredokaBold, 64f, TitleColor, TextAlignmentOptions.Center);
+            TMP_Text text = AddText(rt, "EL PISO ES LAVA", _fredokaBold, 64f, TitleColor, TextAlignmentOptions.Center);
             text.characterSpacing = 2f;
             text.outlineWidth = 0.2f;
             text.outlineColor = TitleOutline;
