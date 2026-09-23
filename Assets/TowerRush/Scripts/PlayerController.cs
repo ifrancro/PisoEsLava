@@ -185,8 +185,7 @@ namespace HeatRise
             checkpoint = value;
             networkPlayer?.SaveCheckpointRpc(value.order);
             Notify("Checkpoint guardado.");
-            if (networkPlayer != null) networkPlayer.PlayCheckpointSoundRpc();
-            else PersistentMusic.Instance?.ReproducirCheckpoint();
+            PersistentMusic.Instance?.ReproducirCheckpoint();
         }
 
         bool TryRespawn()
