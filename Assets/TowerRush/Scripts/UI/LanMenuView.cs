@@ -106,6 +106,7 @@ namespace HeatRise.UI
 
         void Start()
         {
+            PersistentMusic.Instance?.ReproducirIntro();
             SelectMode(true);
             statusText.text = lanMenu.Message;
 

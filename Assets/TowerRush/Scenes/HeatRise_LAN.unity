@@ -105032,6 +105032,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   musicSource: {fileID: 0}
   deathClip: {fileID: 8300000, guid: f4826cfa5f8eefb43aafa7babc4f9375, type: 3}
+  victoryClip: {fileID: 8300000, guid: 57d11e8737803ea4bb0c055fd89bc27f, type: 3}
+  cajaClip: {fileID: 8300000, guid: 73ee550784eedef409820d4c39b6871d, type: 3}
+  checkpointClip: {fileID: 8300000, guid: bb47691df932a8b49936129a8d4d498f, type: 3}
+  miniClip: {fileID: 8300000, guid: 5a3fed25a5261ef45a267524eef6d525, type: 3}
+  grandeClip: {fileID: 8300000, guid: 5df59551accce0b4fa402f81e8ba43db, type: 3}
+  botonClip: {fileID: 8300000, guid: 57701cb65d07ddf41bf97918b9ea771c, type: 3}
+  introClip: {fileID: 8300000, guid: 65889ffc4a23b5a48b46d86e9aa8ec97, type: 3}
 --- !u!82 &1921105017
 AudioSource:
   m_ObjectHideFlags: 0

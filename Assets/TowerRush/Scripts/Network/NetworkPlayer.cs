@@ -193,6 +193,13 @@ namespace HeatRise
                 PersistentMusic.Instance?.ReproducirMuerte(pararMusica);
         }
 
+        [Rpc(SendTo.Owner, RequireOwnership = false)]
+        public void PlayCheckpointSoundRpc(RpcParams rpc = default)
+        {
+            if (rpc.Receive.SenderClientId == Unity.Netcode.NetworkManager.ServerClientId)
+                PersistentMusic.Instance?.ReproducirCheckpoint();
+        }
+
         public void Respawn(Vector3 position, Quaternion rotation)
         {
             if (!IsServer || !Alive.Value || !NetworkRace.Instance.Racing) return;
