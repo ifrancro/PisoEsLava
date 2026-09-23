@@ -156,9 +156,24 @@ namespace HeatRise
 
         void Eliminate(byte cause, string text)
         {
-            if (TryRespawn()) return;
-            if (networkPlayer != null) networkPlayer.Eliminate(cause);
-            else GameManager.Instance?.Lose(text);
+            if (TryRespawn())
+            {
+                if (networkPlayer == null)
+                {
+                    PersistentMusic.Instance?.ReproducirMuerte(false);
+                }
+                return;
+            }
+
+            if (networkPlayer != null)
+            {
+                networkPlayer.Eliminate(cause);
+            }
+            else
+            {
+                PersistentMusic.Instance?.ReproducirMuerte(true);
+                GameManager.Instance?.Lose(text);
+            }
         }
 
         public void SaveCheckpoint(Checkpoint value)

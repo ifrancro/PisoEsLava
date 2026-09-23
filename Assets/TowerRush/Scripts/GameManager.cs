@@ -53,6 +53,7 @@ namespace HeatRise
             Instance = this;
             bestHeight = startHeight;
             Time.timeScale = 1f;
+            PersistentMusic.Instance?.ReiniciarMusicaAmbiente();
         }
 
         void Update()
@@ -134,6 +135,7 @@ namespace HeatRise
 
         public void Restart()
         {
+            PersistentMusic.Instance?.ReiniciarMusicaAmbiente();
             if (Online)
             {
                 NetworkRace.Instance.ReturnToLobby();

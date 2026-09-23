@@ -148,6 +148,7 @@ namespace HeatRise
             foreach (HeavyBlock block in blocks) block.ResetBlock();
             foreach (FragilePlatform platform in fragilePlatforms) platform.ResetPlatform();
             GameManager.Instance.ResetNetworkView();
+            PersistentMusic.Instance?.ReiniciarMusicaAmbiente();
         }
 
         public override void OnDestroy()

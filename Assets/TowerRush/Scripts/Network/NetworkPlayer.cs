@@ -186,6 +186,13 @@ namespace HeatRise
             NetworkRace.Instance.CheckSurvivors();
         }
 
+        [Rpc(SendTo.Owner, RequireOwnership = false)]
+        public void PlayDeathSoundRpc(bool pararMusica, RpcParams rpc = default)
+        {
+            if (rpc.Receive.SenderClientId == Unity.Netcode.NetworkManager.ServerClientId)
+                PersistentMusic.Instance?.ReproducirMuerte(pararMusica);
+        }
+
         public void Respawn(Vector3 position, Quaternion rotation)
         {
             if (!IsServer || !Alive.Value || !NetworkRace.Instance.Racing) return;
@@ -196,6 +203,7 @@ namespace HeatRise
             PublishState();
             transform.rotation = rotation;
             networkTransform.Teleport(position, rotation, transform.localScale);
+            PlayDeathSoundRpc(false);
         }
 
         public void ResetPlayer(Vector3 position)
@@ -242,6 +250,18 @@ namespace HeatRise
             controller.enabled = IsServer && current;
             Player.SetModelVisible(current);
             GetComponent<PlayerCollision>()?.RefreshPairs();
+
+            if (previous && !current)
+            {
+                if (IsOwner)
+                {
+                    PersistentMusic.Instance?.ReproducirMuerte(true);
+                }
+                else
+                {
+                    PersistentMusic.Instance?.ReproducirMuerte(false);
+                }
+            }
         }
 
         void TimersChanged(Vector3 previous, Vector3 current)
