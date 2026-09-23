@@ -1,3 +1,5 @@
+using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -14,6 +16,7 @@ namespace HeatRise
         public float startHeight = 2f;
         public float finishHeight = 55.76f;
         public bool showHud = true;
+        public bool showPing = true;
 
         public bool IsPlaying => Online ? NetworkRace.Instance.Racing : !paused && !finished;
         public bool MenuOpen => paused || HelpOpen;
@@ -185,7 +188,13 @@ namespace HeatRise
                 $"{Mathf.FloorToInt(Elapsed / 60f):00}:{Mathf.FloorToInt(Elapsed % 60f):00}", Color.white);
             if (lava != null) Stat(new Rect(left + (statWidth + 6f) * 2f, top, statWidth, 50f), "LAVA A",
                 $"{Mathf.Max(0f, player.transform.position.y - lava.SurfaceHeight):0.0} m", Orange);
-            if (GUI.Button(new Rect(right - 60f, top, 60f, 28f), "Pausa")) SetPaused(true);
+            if (Cursor.lockState != CursorLockMode.Locked
+                && GUI.Button(new Rect(right - 60f, top, 60f, 28f), "Pausa")) SetPaused(true);
+            if (showPing)
+            {
+                string ping = PingLabel();
+                if (ping.Length > 0) GUI.Label(new Rect(right - 216f, top + 4f, 150f, 20f), ping, label);
+            }
             if (safe.width >= 960f)
             {
                 int sector = Mathf.Clamp(Mathf.FloorToInt(Mathf.InverseLerp(startHeight, finishHeight,
@@ -212,6 +221,17 @@ namespace HeatRise
                 Panel(toast);
                 GUI.Label(new Rect(toast.x + 10f, toast.y + 4f, toast.width - 20f, toast.height - 8f), message, label);
             }
+        }
+
+        static string PingLabel()
+        {
+            NetworkManager manager = NetworkManager.Singleton;
+            if (manager == null || !manager.IsClient || manager.IsServer) return "";
+            UnityTransport transport = manager.NetworkConfig.NetworkTransport as UnityTransport;
+            if (transport == null) return "";
+            string mode = LanMenu.Instance != null && LanMenu.Instance.useInternet
+                ? " · " + LanMenu.Instance.RelayConnection.ToUpperInvariant() : "";
+            return "RTT " + transport.GetCurrentRtt(NetworkManager.ServerClientId) + " ms" + mode;
         }
 
         void Stat(Rect rect, string caption, string text, Color color)

@@ -36,6 +36,8 @@ namespace HeatRise
             || Mouse.current?.middleButton.isPressed == true;
         public static Vector2 MousePosition => Mouse.current != null
             ? Mouse.current.position.ReadValue() : Vector2.zero;
+        public static Vector2 LookDelta => Mouse.current != null
+            ? Mouse.current.delta.ReadValue() : Vector2.zero;
         public static float Scroll => Mouse.current != null
             ? Mouse.current.scroll.ReadValue().y / 120f : 0f;
 #else
@@ -61,6 +63,7 @@ namespace HeatRise
         public static bool Pause => Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P);
         public static bool OrbitHeld => Input.GetMouseButton(1) || Input.GetMouseButton(0) || Input.GetMouseButton(2);
         public static Vector2 MousePosition => Input.mousePosition;
+        public static Vector2 LookDelta => new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y")) * 10f;
         public static float Scroll => Input.mouseScrollDelta.y;
 #endif
     }

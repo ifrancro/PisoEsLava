@@ -9,36 +9,35 @@ namespace HeatRise
         public float distance = 10f;
         public float sensitivity = 0.2f;
         public float pitch = 28f;
+        public bool invertX;
+        public bool invertY;
+        public bool lockCursor = true;
         public LayerMask obstacleMask = Physics.DefaultRaycastLayers;
 
         float yaw;
-        Vector2 previousMouse;
-        bool wasDragging;
 
         void Start()
         {
-            previousMouse = GameInput.MousePosition;
             Align();
+        }
+
+        void OnDisable()
+        {
+            ReleaseCursor();
         }
 
         void LateUpdate()
         {
-            Vector2 mouse = GameInput.MousePosition;
-            Vector2 delta = mouse - previousMouse;
-            previousMouse = mouse;
             if (player == null || !GameManager.Playing || GameManager.Instance != null && GameManager.Instance.MenuOpen)
             {
-                wasDragging = false;
+                ReleaseCursor();
                 return;
             }
 
-            bool dragging = GameInput.OrbitHeld;
-            if (dragging && wasDragging)
-            {
-                yaw -= delta.x * sensitivity;
-                pitch = Mathf.Clamp(pitch - delta.y * sensitivity, 7f, 65f);
-            }
-            wasDragging = dragging;
+            CaptureCursor();
+            Vector2 delta = GameInput.LookDelta;
+            yaw += delta.x * sensitivity * (invertX ? -1f : 1f);
+            pitch = Mathf.Clamp(pitch - delta.y * sensitivity * (invertY ? -1f : 1f), 7f, 65f);
             distance = Mathf.Clamp(distance - GameInput.Scroll, 4f, 16f);
             if (GameInput.Align) Align();
 
@@ -58,6 +57,20 @@ namespace HeatRise
 
             transform.position = pivot + boom * length;
             transform.LookAt(pivot);
+        }
+
+        void CaptureCursor()
+        {
+            if (!lockCursor || Cursor.lockState == CursorLockMode.Locked) return;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+
+        void ReleaseCursor()
+        {
+            if (Cursor.lockState == CursorLockMode.None) return;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
         }
 
         public void Align()
