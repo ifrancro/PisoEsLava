@@ -4,7 +4,7 @@ using UnityEngine.EventSystems;
 
 namespace HeatRise.UI
 {
-    public sealed class UIHoverPress : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
+    public sealed class UIHoverPress : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler, IPointerClickHandler
     {
         public RectTransform target;
         public float hoverScale = 1.04f;
@@ -24,6 +24,7 @@ namespace HeatRise.UI
         public void OnPointerExit(PointerEventData eventData) { pointerOver = false; pointerDown = false; Apply(); }
         public void OnPointerDown(PointerEventData eventData) { pointerDown = true; Apply(); }
         public void OnPointerUp(PointerEventData eventData) { pointerDown = false; Apply(); }
+        public void OnPointerClick(PointerEventData eventData) { PersistentMusic.Instance?.ReproducirBoton(); }
 
         void Apply()
         {

@@ -33,6 +33,7 @@ namespace HeatRise
             if (IsMoving || HasMoved) return;
             startedAt = time;
             IsMoving = true;
+            PersistentMusic.Instance?.ReproducirCaja();
         }
 
         public void ResetBlock()

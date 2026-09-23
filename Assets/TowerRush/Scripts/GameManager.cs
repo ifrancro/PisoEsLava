@@ -114,6 +114,7 @@ namespace HeatRise
             won = true;
             bestHeight = finishHeight;
             reason = "Llegaste a la cima antes que la lava.";
+            PersistentMusic.Instance?.ReproducirVictoria();
             Time.timeScale = 0f;
         }
 
@@ -189,7 +190,11 @@ namespace HeatRise
             if (lava != null) Stat(new Rect(left + (statWidth + 6f) * 2f, top, statWidth, 50f), "LAVA A",
                 $"{Mathf.Max(0f, player.transform.position.y - lava.SurfaceHeight):0.0} m", Orange);
             if (Cursor.lockState != CursorLockMode.Locked
-                && GUI.Button(new Rect(right - 60f, top, 60f, 28f), "Pausa")) SetPaused(true);
+                && GUI.Button(new Rect(right - 60f, top, 60f, 28f), "Pausa"))
+            {
+                PersistentMusic.Instance?.ReproducirBoton();
+                SetPaused(true);
+            }
             if (showPing)
             {
                 string ping = PingLabel();

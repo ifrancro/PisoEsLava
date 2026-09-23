@@ -185,6 +185,8 @@ namespace HeatRise
             checkpoint = value;
             networkPlayer?.SaveCheckpointRpc(value.order);
             Notify("Checkpoint guardado.");
+            if (networkPlayer != null) networkPlayer.PlayCheckpointSoundRpc();
+            else PersistentMusic.Instance?.ReproducirCheckpoint();
         }
 
         bool TryRespawn()
@@ -255,6 +257,7 @@ namespace HeatRise
 
         public void ApplySize(Size size)
         {
+            Size previousSize = CurrentSize;
             CurrentSize = size;
             float scale = size == Size.Small ? smallScale : size == Size.Large ? largeScale : 1f;
             float height = baseHeight * scale;
@@ -269,6 +272,18 @@ namespace HeatRise
                     || size == Size.Large && largeModel == null ? scale : 1f);
             SetModelVisible(modelVisible);
             playerCollision?.RefreshPairs();
+
+            if (IsLocal && previousSize != size)
+            {
+                if (size == Size.Small)
+                {
+                    PersistentMusic.Instance?.ReproducirMini();
+                }
+                else if (size == Size.Large)
+                {
+                    PersistentMusic.Instance?.ReproducirGrande();
+                }
+            }
         }
 
         public void SetModelVisible(bool visible)

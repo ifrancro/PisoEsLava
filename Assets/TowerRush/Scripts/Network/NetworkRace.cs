@@ -46,6 +46,36 @@ namespace HeatRise
         public override void OnNetworkSpawn()
         {
             GameManager.Instance.ResetNetworkView();
+            WinnerSlot.OnValueChanged += WinnerSlotChanged;
+            Stage.OnValueChanged += StageChanged;
+            if (Stage.Value == 2) PersistentMusic.Instance?.ReiniciarMusicaAmbiente();
+            else PersistentMusic.Instance?.ReproducirIntro();
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            WinnerSlot.OnValueChanged -= WinnerSlotChanged;
+            Stage.OnValueChanged -= StageChanged;
+        }
+
+        void StageChanged(byte previous, byte current)
+        {
+            if (current == 2)
+            {
+                PersistentMusic.Instance?.ReiniciarMusicaAmbiente();
+            }
+            else if (current == 0 || current == 1)
+            {
+                PersistentMusic.Instance?.ReproducirIntro();
+            }
+        }
+
+        void WinnerSlotChanged(int previous, int current)
+        {
+            if (current >= 0)
+            {
+                PersistentMusic.Instance?.ReproducirVictoria();
+            }
         }
 
         void Update()
