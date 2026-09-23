@@ -25,8 +25,10 @@ namespace HeatRise
         public ushort port = 7777;
         public string hostAddress = "";
         public bool useInternet = true;
+        public bool encryptOnline = true;
         public string joinCode = "";
         public string RoomCode { get; private set; } = "";
+        public string RelayConnection => encryptOnline ? "dtls" : "udp";
 
         public const string Version = "3.0";
         public static string VersionLabel => "HEAT RISE · " + Version;
@@ -168,7 +170,7 @@ namespace HeatRise
                     if (this == null || leaving) return;
                     string code = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
                     if (this == null || leaving) return;
-                    transport.SetRelayServerData(allocation.ToRelayServerData("dtls"));
+                    transport.SetRelayServerData(allocation.ToRelayServerData(RelayConnection));
                     RoomCode = code;
                     if (!network.StartHost()) throw new InvalidOperationException("No se pudo iniciar el host.");
                 }
@@ -176,7 +178,7 @@ namespace HeatRise
                 {
                     JoinAllocation allocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
                     if (this == null || leaving) return;
-                    transport.SetRelayServerData(allocation.ToRelayServerData("dtls"));
+                    transport.SetRelayServerData(allocation.ToRelayServerData(RelayConnection));
                     RoomCode = joinCode;
                     if (!network.StartClient()) throw new InvalidOperationException("No se pudo iniciar el cliente.");
                 }

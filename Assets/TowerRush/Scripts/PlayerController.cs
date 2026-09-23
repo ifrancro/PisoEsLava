@@ -84,7 +84,7 @@ namespace HeatRise
             if ((actions & 2) != 0) ChangeSize(Size.Small);
             if ((actions & 4) != 0) ChangeSize(Size.Large);
             if ((actions & 8) != 0) ChangeSize(Size.Normal);
-            if ((actions & 16) != 0 && !Checkpoint.TryActivateNearby(this)) PushBlock();
+            if ((actions & 16) != 0) PushBlock();
 
             Vector3 carry = Vector3.zero;
             if (grounded && support != null)
