@@ -10,6 +10,12 @@ namespace HeatRise
     public sealed class NetworkPlayer : NetworkBehaviour
     {
         public readonly NetworkVariable<bool> Alive = new NetworkVariable<bool>(true);
+        public readonly NetworkVariable<bool> Finished = new NetworkVariable<bool>(false);
+        public readonly NetworkVariable<float> FinishTime = new NetworkVariable<float>(-1f);
+        public readonly NetworkVariable<float> EliminationTime = new NetworkVariable<float>(-1f);
+        public readonly NetworkVariable<int> Falls = new NetworkVariable<int>(0);
+        public readonly NetworkVariable<int> Crystals = new NetworkVariable<int>(0);
+        public readonly NetworkVariable<uint> CrystalMask = new NetworkVariable<uint>(0);
         public readonly NetworkVariable<bool> Ready = new NetworkVariable<bool>(false);
         public readonly NetworkVariable<byte> Form = new NetworkVariable<byte>(0,
             NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -43,11 +49,13 @@ namespace HeatRise
         {
             Form.OnValueChanged += FormChanged;
             Alive.OnValueChanged += AliveChanged;
+            Finished.OnValueChanged += FinishedChanged;
             NetworkRace.Instance.Register(this);
             if (IsServer) Slot.Value = LanMenu.Instance.GetSlot(OwnerClientId);
             Slot.OnValueChanged += SlotChanged;
             SlotChanged(Slot.Value, Slot.Value);
             Player.ApplySize((PlayerController.Size)Form.Value);
+            Player.RestartAnimation();
             AliveChanged(false, Alive.Value);
             if (IsOwner)
             {
@@ -70,6 +78,7 @@ namespace HeatRise
         {
             Form.OnValueChanged -= FormChanged;
             Alive.OnValueChanged -= AliveChanged;
+            Finished.OnValueChanged -= FinishedChanged;
             Slot.OnValueChanged -= SlotChanged;
             if (NetworkRace.Instance != null) NetworkRace.Instance.Unregister(this);
         }
@@ -77,7 +86,7 @@ namespace HeatRise
         void Update()
         {
             if (!IsSpawned || !IsOwner) return;
-            bool allow = Alive.Value && NetworkRace.Instance.Racing
+            bool allow = Alive.Value && !Finished.Value && NetworkRace.Instance.Racing
                 && !GameManager.Instance.MenuOpen && Application.isFocused;
             direction = allow ? Player.ReadDirection() : Vector3.zero;
             actions = allow ? PlayerController.ReadActions() : (byte)0;
@@ -112,27 +121,59 @@ namespace HeatRise
 
         public void Eliminate(byte cause)
         {
-            if (!IsOwner || !Alive.Value || !NetworkRace.Instance.Racing) return;
+            if (!IsOwner || !Alive.Value || Finished.Value || !NetworkRace.Instance.Racing) return;
             RequestEliminateRpc(cause, transform.position);
+        }
+
+        public void RecordFall()
+        {
+            if (IsOwner && Alive.Value && !Finished.Value && NetworkRace.Instance.Racing)
+                RecordFallRpc();
+        }
+
+        [Rpc(SendTo.Server, RequireOwnership = true)]
+        void RecordFallRpc(RpcParams rpc = default)
+        {
+            if (Alive.Value && !Finished.Value && NetworkRace.Instance.Racing) Falls.Value++;
+        }
+
+        public void CollectCrystal(int index)
+        {
+            if (IsOwner && Alive.Value && !Finished.Value && NetworkRace.Instance.Racing)
+                CollectCrystalRpc(index);
+        }
+
+        [Rpc(SendTo.Server, RequireOwnership = true)]
+        void CollectCrystalRpc(int index, RpcParams rpc = default)
+        {
+            GameManager game = GameManager.Instance;
+            if (!Alive.Value || Finished.Value || !NetworkRace.Instance.Racing || game == null
+                || index < 0 || index >= game.CrystalPositions.Count || index >= 32) return;
+            uint bit = 1u << index;
+            if ((CrystalMask.Value & bit) != 0
+                || (transform.position - game.CrystalPositions[index]).sqrMagnitude > 9f) return;
+            CrystalMask.Value |= bit;
+            Crystals.Value++;
         }
 
         [Rpc(SendTo.Server, RequireOwnership = true)]
         void RequestEliminateRpc(byte cause, Vector3 position, RpcParams rpc = default)
         {
-            if (!Alive.Value || !NetworkRace.Instance.Racing) return;
-            if (cause == 2)
+            if (!Alive.Value || Finished.Value || !NetworkRace.Instance.Racing) return;
+            if (cause == 1 || cause == 2)
             {
                 LavaRise lava = GameManager.Instance != null ? GameManager.Instance.lava : null;
                 if (lava == null || position.y > lava.SurfaceHeight + 0.5f) return;
             }
             Cause.Value = cause;
+            EliminationTime.Value = NetworkRace.Instance.Elapsed;
             Alive.Value = false;
             NetworkRace.Instance.CheckSurvivors();
         }
 
         public void RequestFinish()
         {
-            if (!IsOwner || !Alive.Value || !NetworkRace.Instance.Racing) return;
+            if (!IsOwner || !Alive.Value || Finished.Value || !NetworkRace.Instance.Racing) return;
             RequestFinishRpc();
         }
 
@@ -144,7 +185,7 @@ namespace HeatRise
 
         public void Respawn(Vector3 position, Quaternion rotation)
         {
-            if (!IsOwner || !Alive.Value || !NetworkRace.Instance.Racing) return;
+            if (!IsOwner || !Alive.Value || Finished.Value || !NetworkRace.Instance.Racing) return;
             Form.Value = 0;
             direction = Vector3.zero;
             actions = 0;
@@ -159,7 +200,14 @@ namespace HeatRise
             if (!IsServer) return;
             Ready.Value = false;
             Alive.Value = true;
+            Finished.Value = false;
+            FinishTime.Value = -1f;
+            EliminationTime.Value = -1f;
+            Falls.Value = 0;
+            Crystals.Value = 0;
+            CrystalMask.Value = 0;
             Cause.Value = 0;
+            SavedCheckpointOrder.Value = 0;
             direction = Vector3.zero;
             actions = 0;
             ResetOwnerRpc(position);
@@ -203,7 +251,7 @@ namespace HeatRise
 
         void AliveChanged(bool previous, bool current)
         {
-            controller.enabled = IsOwner && current;
+            controller.enabled = IsOwner && current && !Finished.Value;
             Player.SetModelVisible(current);
             GetComponent<PlayerCollision>()?.RefreshPairs();
 
@@ -218,6 +266,11 @@ namespace HeatRise
                     PersistentMusic.Instance?.ReproducirMuerte(false);
                 }
             }
+        }
+
+        void FinishedChanged(bool previous, bool current)
+        {
+            controller.enabled = IsOwner && Alive.Value && !current;
         }
     }
 }

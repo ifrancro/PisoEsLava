@@ -13,6 +13,7 @@ namespace HeatRise
         public bool invertY;
         public bool lockCursor = true;
         public LayerMask obstacleMask = Physics.DefaultRaycastLayers;
+        public NetworkPlayer SpectatedPlayer { get; private set; }
 
         float yaw;
 
@@ -28,6 +29,21 @@ namespace HeatRise
 
         void LateUpdate()
         {
+            NetworkRace race = NetworkRace.Instance;
+            NetworkPlayer local = race != null ? race.LocalPlayer : null;
+            if (race != null && race.Racing && local != null && !local.Alive.Value)
+            {
+                int direction = GameInput.SpectatePrevious ? -1 : GameInput.SpectateNext ? 1 : 0;
+                if (direction != 0 || SpectatedPlayer == null || !SpectatedPlayer.IsSpawned
+                    || !SpectatedPlayer.Alive.Value || SpectatedPlayer.Finished.Value)
+                    SelectSpectator(race, local.Slot.Value, direction == 0 ? 1 : direction);
+                if (SpectatedPlayer != null) player = SpectatedPlayer.Player;
+            }
+            else if (local != null)
+            {
+                SpectatedPlayer = null;
+                player = local.Player;
+            }
             if (player == null || !GameManager.Playing || GameManager.Instance != null && GameManager.Instance.MenuOpen)
             {
                 ReleaseCursor();
@@ -57,6 +73,23 @@ namespace HeatRise
 
             transform.position = pivot + boom * length;
             transform.LookAt(pivot);
+        }
+
+        void SelectSpectator(NetworkRace race, int localSlot, int direction)
+        {
+            int start = SpectatedPlayer != null ? SpectatedPlayer.Slot.Value : localSlot;
+            SpectatedPlayer = null;
+            for (int step = 1; step <= 4; step++)
+            {
+                int slot = (start + direction * step + 8) % 4;
+                foreach (NetworkPlayer candidate in race.Players)
+                {
+                    if (candidate == null || !candidate.IsSpawned || candidate.Slot.Value != slot
+                        || !candidate.Alive.Value || candidate.Finished.Value) continue;
+                    SpectatedPlayer = candidate;
+                    return;
+                }
+            }
         }
 
         void CaptureCursor()

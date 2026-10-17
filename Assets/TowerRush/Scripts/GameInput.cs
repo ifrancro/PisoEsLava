@@ -28,6 +28,8 @@ namespace HeatRise
         public static bool Normal => Keyboard.current?.rKey.wasPressedThisFrame == true;
         public static bool Push => Keyboard.current?.fKey.wasPressedThisFrame == true;
         public static bool Align => Keyboard.current?.cKey.wasPressedThisFrame == true;
+        public static bool SpectatePrevious => Keyboard.current?.aKey.wasPressedThisFrame == true;
+        public static bool SpectateNext => Keyboard.current?.dKey.wasPressedThisFrame == true;
         public static bool Confirm => Keyboard.current?.enterKey.wasPressedThisFrame == true;
         public static bool Pause => Keyboard.current?.escapeKey.wasPressedThisFrame == true
             || Keyboard.current?.pKey.wasPressedThisFrame == true;
@@ -59,6 +61,8 @@ namespace HeatRise
         public static bool Normal => Input.GetKeyDown(KeyCode.R);
         public static bool Push => Input.GetKeyDown(KeyCode.F);
         public static bool Align => Input.GetKeyDown(KeyCode.C);
+        public static bool SpectatePrevious => Input.GetKeyDown(KeyCode.A);
+        public static bool SpectateNext => Input.GetKeyDown(KeyCode.D);
         public static bool Confirm => Input.GetKeyDown(KeyCode.Return);
         public static bool Pause => Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P);
         public static bool OrbitHeld => Input.GetMouseButton(1) || Input.GetMouseButton(0) || Input.GetMouseButton(2);

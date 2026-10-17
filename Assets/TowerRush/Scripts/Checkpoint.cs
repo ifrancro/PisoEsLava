@@ -37,26 +37,6 @@ namespace HeatRise
             player.SaveCheckpoint(this);
         }
 
-        bool Contains(PlayerController player)
-        {
-            if (!isActiveAndEnabled || activationZone == null || !activationZone.enabled) return false;
-            Vector3 point = transform.InverseTransformPoint(player.transform.position + Vector3.up * 0.2f);
-            return new Bounds(activationZone.center, activationZone.size).Contains(point);
-        }
-
-        void OnGUI()
-        {
-            GameManager game = GameManager.Instance;
-            if (game == null || !GameManager.Playing || game.MenuOpen || game.player == null
-                || !game.player.IsLocal || !Contains(game.player)) return;
-            NetworkPlayer network = game.player.GetComponent<NetworkPlayer>();
-            int savedOrder = network != null ? network.SavedCheckpointOrder.Value : game.player.CheckpointOrder;
-            string text = savedOrder >= order ? "CHECKPOINT GUARDADO" : "GUARDANDO CHECKPOINT...";
-            Rect safe = Screen.safeArea;
-            float width = Mathf.Min(280f, safe.width - 32f);
-            GUI.Box(new Rect(safe.center.x - width * 0.5f, Screen.height - safe.yMin - 108f, width, 32f), text);
-        }
-
         public Transform GetRespawnPoint(PlayerController player)
         {
             NetworkPlayer network = player.GetComponent<NetworkPlayer>();

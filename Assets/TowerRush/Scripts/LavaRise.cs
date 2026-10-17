@@ -25,9 +25,18 @@ namespace HeatRise
         {
             float elapsed = GameManager.Instance != null ? GameManager.Instance.Elapsed : Time.time;
             float t = Mathf.Max(0f, elapsed - waitTime);
+            float distance = Distance(t);
+            float eruptionAt = GameManager.Instance != null ? GameManager.Instance.EruptionAt : -1f;
+            if (eruptionAt >= 0f)
+                distance += 0.5f * Mathf.Max(0f, distance - Distance(Mathf.Max(0f, eruptionAt - waitTime)));
             Vector3 position = transform.position;
-            position.y = startY + initialSpeed * t + 0.5f * acceleration * t * t;
+            position.y = startY + distance;
             transform.position = position;
+        }
+
+        float Distance(float time)
+        {
+            return initialSpeed * time + 0.5f * acceleration * time * time;
         }
     }
 }

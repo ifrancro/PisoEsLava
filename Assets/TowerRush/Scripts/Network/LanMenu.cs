@@ -30,9 +30,8 @@ namespace HeatRise
         public string RoomCode { get; private set; } = "";
         public string RelayConnection => encryptOnline ? "dtls" : "udp";
 
-        public const string Version = "3.0";
-        public static string VersionLabel => "EL PISO ES LAVA · " + Version;
-        const string Protocol = "HeatRise-LAN-" + Version;
+        public static string VersionLabel => "EL PISO ES LAVA";
+        const string Protocol = "HeatRise-LAN-3.1";
         public event Action OnConnected;
         public bool Connecting => connecting;
         public bool Leaving => leaving;

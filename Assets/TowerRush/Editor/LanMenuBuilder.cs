@@ -381,19 +381,20 @@ namespace HeatRise.EditorTools
             contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             RectTransform helpRt = NewChild("HelpText", content).GetComponent<RectTransform>();
-            view.joinHelpText = AddText(helpRt, "Escribe el código que compartió el host.", _nunitoSemi, 14f, SubtitleColor, TextAlignmentOptions.Left);
+            view.joinHelpText = AddText(helpRt, "Escribe el código que compartió el host.", _nunitoSemi, 14f, SubtitleColor, TextAlignmentOptions.Center);
             helpRt.gameObject.AddComponent<LayoutElement>().preferredHeight = 20f;
 
             RectTransform row = NewChild("Row", content).GetComponent<RectTransform>();
             HorizontalLayoutGroup rowLayout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
             rowLayout.spacing = 10f;
-            rowLayout.childAlignment = TextAnchor.MiddleLeft;
+            rowLayout.childAlignment = TextAnchor.MiddleCenter;
             rowLayout.childControlWidth = true;
             rowLayout.childControlHeight = true;
+            rowLayout.childForceExpandWidth = false;
             row.gameObject.AddComponent<LayoutElement>().preferredHeight = 44f;
 
             RectTransform inputRt = BuildIpInput(row, view);
-            inputRt.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
+            inputRt.gameObject.AddComponent<LayoutElement>().preferredWidth = 560f;
 
             RectTransform dotRt = NewChild("StatusDot", row).GetComponent<RectTransform>();
             LayoutElement dotLe = dotRt.gameObject.AddComponent<LayoutElement>();
@@ -404,9 +405,10 @@ namespace HeatRise.EditorTools
             dot.color = IdleDot;
             dot.raycastTarget = false;
             view.statusDot = dot;
+            dotRt.gameObject.SetActive(false);
 
             RectTransform hintRt = NewChild("Hint", content).GetComponent<RectTransform>();
-            TMP_Text hint = AddText(hintRt, "Escribe la IP del host.", _nunitoExtra, 12f, HintIdle, TextAlignmentOptions.Left);
+            TMP_Text hint = AddText(hintRt, "Escribe la IP del host.", _nunitoExtra, 12f, HintIdle, TextAlignmentOptions.Center);
             hintRt.gameObject.AddComponent<LayoutElement>().preferredHeight = 18f;
             view.hintText = hint;
 
@@ -445,11 +447,11 @@ namespace HeatRise.EditorTools
 
             RectTransform placeholderRt = NewChild("Placeholder", textArea).GetComponent<RectTransform>();
             Stretch(placeholderRt);
-            TMP_Text placeholder = AddText(placeholderRt, "192.168.1.20", _nunitoBold, 16f, new Color(0.95f, 0.85f, 0.78f, 0.4f), TextAlignmentOptions.Left);
+            TMP_Text placeholder = AddText(placeholderRt, "192.168.1.20", _nunitoBold, 16f, new Color(0.95f, 0.85f, 0.78f, 0.4f), TextAlignmentOptions.Center);
 
             RectTransform textRt = NewChild("Text", textArea).GetComponent<RectTransform>();
             Stretch(textRt);
-            TMP_Text text = AddText(textRt, "", _nunitoBold, 16f, Color.white, TextAlignmentOptions.Left);
+            TMP_Text text = AddText(textRt, "", _nunitoBold, 16f, Color.white, TextAlignmentOptions.Center);
 
             field.textViewport = textArea;
             field.textComponent = text;
