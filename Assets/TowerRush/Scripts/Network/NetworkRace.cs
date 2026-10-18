@@ -16,6 +16,7 @@ namespace HeatRise
         public readonly NetworkVariable<byte> Stage = new NetworkVariable<byte>(0);
         public readonly NetworkVariable<ulong> Winner = new NetworkVariable<ulong>(ulong.MaxValue);
         public readonly NetworkVariable<int> WinnerSlot = new NetworkVariable<int>(-1);
+        public readonly NetworkVariable<float> EruptionAt = new NetworkVariable<float>(-1f);
         readonly NetworkVariable<double> startTime = new NetworkVariable<double>(0);
         readonly NetworkVariable<double> finishTime = new NetworkVariable<double>(0);
 
@@ -26,6 +27,53 @@ namespace HeatRise
         public int Countdown => IsSpawned ? Mathf.Max(0,
             Mathf.CeilToInt((float)(startTime.Value - NetworkManager.ServerTime.Time))) : 0;
         public NetworkPlayer LocalPlayer => Players.Find(p => p.IsOwner);
+        public NetworkPlayer Leader
+        {
+            get
+            {
+                NetworkPlayer leader = null;
+                foreach (NetworkPlayer player in Players)
+                    if (player != null && player.IsSpawned && player.Alive.Value
+                        && (leader == null || ComparePlacement(player, leader) < 0)) leader = player;
+                return leader;
+            }
+        }
+
+        public int PositionOf(NetworkPlayer player)
+        {
+            if (player == null) return 0;
+            int position = 1;
+            foreach (NetworkPlayer other in Players)
+                if (other != null && other != player && other.IsSpawned
+                    && ComparePlacement(other, player) < 0) position++;
+            return position;
+        }
+
+        public int ComparePlacement(NetworkPlayer first, NetworkPlayer second)
+        {
+            if (first.Finished.Value != second.Finished.Value) return first.Finished.Value ? -1 : 1;
+            if (first.Alive.Value != second.Alive.Value) return first.Alive.Value ? -1 : 1;
+            if (first.Finished.Value)
+            {
+                int finish = first.FinishTime.Value.CompareTo(second.FinishTime.Value);
+                if (finish != 0) return finish;
+            }
+            else
+            {
+                int checkpoint = second.SavedCheckpointOrder.Value.CompareTo(first.SavedCheckpointOrder.Value);
+                if (checkpoint != 0) return checkpoint;
+                int height = second.transform.position.y.CompareTo(first.transform.position.y);
+                if (height != 0) return height;
+            }
+            int crystals = second.Crystals.Value.CompareTo(first.Crystals.Value);
+            if (crystals != 0) return crystals;
+            if (!first.Alive.Value)
+            {
+                int survival = second.EliminationTime.Value.CompareTo(first.EliminationTime.Value);
+                if (survival != 0) return survival;
+            }
+            return first.Slot.Value.CompareTo(second.Slot.Value);
+        }
         public bool AllReady
         {
             get
@@ -47,6 +95,7 @@ namespace HeatRise
         {
             GameManager.Instance.ResetNetworkView();
             WinnerSlot.OnValueChanged += WinnerSlotChanged;
+            EruptionAt.OnValueChanged += EruptionChanged;
             Stage.OnValueChanged += StageChanged;
             if (Stage.Value == 2) PersistentMusic.Instance?.ReiniciarMusicaAmbiente();
             else PersistentMusic.Instance?.ReproducirIntro();
@@ -55,6 +104,7 @@ namespace HeatRise
         public override void OnNetworkDespawn()
         {
             WinnerSlot.OnValueChanged -= WinnerSlotChanged;
+            EruptionAt.OnValueChanged -= EruptionChanged;
             Stage.OnValueChanged -= StageChanged;
         }
 
@@ -68,14 +118,23 @@ namespace HeatRise
             {
                 PersistentMusic.Instance?.ReproducirIntro();
             }
+            else if (current == 3 && WinnerSlot.Value >= 0)
+            {
+                PersistentMusic.Instance?.ReproducirVictoria();
+            }
         }
 
         void WinnerSlotChanged(int previous, int current)
         {
-            if (current >= 0)
+            if (current >= 0 && Stage.Value == 3)
             {
                 PersistentMusic.Instance?.ReproducirVictoria();
             }
+        }
+
+        void EruptionChanged(float previous, float current)
+        {
+            if (current >= 0f) GameManager.Instance?.ShowEruption();
         }
 
         void Update()
@@ -92,7 +151,21 @@ namespace HeatRise
                 else if (NetworkManager.ServerTime.Time >= startTime.Value)
                     Stage.Value = 2;
             }
-            if (Racing) CheckSurvivors();
+            if (Racing)
+            {
+                if (EruptionAt.Value < 0f && GameManager.Instance != null)
+                {
+                    GameManager game = GameManager.Instance;
+                    float lastSector = Mathf.Lerp(game.startHeight, game.finishHeight, 5f / 6f);
+                    foreach (NetworkPlayer player in Players)
+                    {
+                        if (!player.Alive.Value || player.Finished.Value || player.transform.position.y < lastSector) continue;
+                        EruptionAt.Value = Elapsed;
+                        break;
+                    }
+                }
+                CheckSurvivors();
+            }
         }
 
         public void Register(NetworkPlayer player)
@@ -103,30 +176,38 @@ namespace HeatRise
         public void Unregister(NetworkPlayer player)
         {
             Players.Remove(player);
+            if (IsServer && Racing && !NetworkManager.ShutdownInProgress) CheckSurvivors();
         }
 
         public void StartRace()
         {
             if (!IsServer || !AllReady) return;
+            EruptionAt.Value = -1f;
             startTime.Value = NetworkManager.ServerTime.Time + 3.0;
             Stage.Value = 1;
         }
 
         public void TryFinish(NetworkPlayer player)
         {
-            if (!IsServer || !Racing || !player.Alive.Value) return;
-            Winner.Value = player.OwnerClientId;
-            WinnerSlot.Value = player.Slot.Value;
-            finishTime.Value = NetworkManager.ServerTime.Time;
-            Stage.Value = 3;
+            if (!IsServer || !Racing || !player.Alive.Value || player.Finished.Value) return;
+            if (GameManager.Instance != null
+                && player.transform.position.y < GameManager.Instance.finishHeight - 4f) return;
+            player.FinishTime.Value = Elapsed;
+            player.Finished.Value = true;
+            if (WinnerSlot.Value < 0)
+            {
+                Winner.Value = player.OwnerClientId;
+                WinnerSlot.Value = player.Slot.Value;
+            }
+            player.ShowMessageRpc("Llegaste a la meta. Esperá al resto.");
+            CheckSurvivors();
         }
 
         public void CheckSurvivors()
         {
             if (!IsServer || !Racing) return;
-            foreach (NetworkPlayer player in Players) if (player.Alive.Value) return;
-            Winner.Value = ulong.MaxValue;
-            WinnerSlot.Value = -1;
+            foreach (NetworkPlayer player in Players)
+                if (player.Alive.Value && !player.Finished.Value) return;
             finishTime.Value = NetworkManager.ServerTime.Time;
             Stage.Value = 3;
         }
@@ -184,6 +265,7 @@ namespace HeatRise
             if (!IsServer || Stage.Value != 3) return;
             Stage.Value = 0;
             startTime.Value = finishTime.Value = 0;
+            EruptionAt.Value = -1f;
             Winner.Value = ulong.MaxValue;
             WinnerSlot.Value = -1;
             ResetWorldRpc();

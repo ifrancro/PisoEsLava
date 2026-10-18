@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using HeatRise;
 using TMPro;
 using UnityEngine;
@@ -6,10 +7,9 @@ using UnityEngine.UI;
 
 namespace HeatRise.UI
 {
-    /// <summary>Sala online, cuenta regresiva, resultado, eliminacion y pausa online con el diseno del menu.</summary>
     public sealed class LobbyView : MonoBehaviour
     {
-        enum Panel { Hidden, Closing, Lobby, Countdown, Result, Eliminated, Paused }
+        enum Panel { Hidden, Closing, Lobby, Countdown, Result, Paused }
 
         [Header("Wiring")]
         public LanMenu lanMenu;
@@ -60,6 +60,7 @@ namespace HeatRise.UI
 
         bool shown;
         Coroutine anim;
+        readonly List<NetworkPlayer> resultPlayers = new List<NetworkPlayer>(4);
 
         void Awake()
         {
@@ -113,8 +114,6 @@ namespace HeatRise.UI
             if (race.Stage.Value == 1) return Panel.Countdown;
             if (race.Stage.Value == 3) return Panel.Result;
 
-            NetworkPlayer local = race.LocalPlayer;
-            if (local != null && !local.Alive.Value) return Panel.Eliminated;
             if (manager != null && manager.MenuOpen) return Panel.Paused;
             return Panel.Hidden;
         }
@@ -150,26 +149,11 @@ namespace HeatRise.UI
                     break;
 
                 case Panel.Result:
-                    bool won = race.WinnerSlot.Value >= 0;
-                    titleText.text = won
-                        ? "Ganó Jugador " + (race.WinnerSlot.Value + 1)
-                        : "Todos eliminados. Sin ganador.";
-                    titleText.color = won ? winColor : lostColor;
-                    ShowOnly(message: true, hint: !host, lobby: host, leave: true);
-                    messageText.text = "Tiempo: " + race.Elapsed.ToString("0.0") + " s";
+                    titleText.text = "PODIO FINAL";
+                    titleText.color = race.WinnerSlot.Value >= 0 ? winColor : lostColor;
+                    ShowOnly(players: true, hint: !host, lobby: host, leave: true);
+                    FillResults(race);
                     if (!host) hintText.text = "El host puede preparar otra ronda.";
-                    leaveLabel.text = leaveText;
-                    break;
-
-                case Panel.Eliminated:
-                    titleText.text = "Eliminado";
-                    titleText.color = lostColor;
-                    ShowOnly(message: true, hint: true, leave: true);
-                    messageText.text = local != null && local.Cause.Value == 2
-                        ? "La lava te alcanzó." : "Te caíste de la torre.";
-                    hintText.text = host
-                        ? "La carrera continúa. Mantené el juego abierto: esta computadora sigue siendo el servidor."
-                        : "La carrera continúa. Esperá el resultado.";
                     leaveLabel.text = leaveText;
                     break;
 
@@ -180,6 +164,30 @@ namespace HeatRise.UI
                     messageText.text = "La carrera sigue en marcha.";
                     leaveLabel.text = leaveText;
                     break;
+            }
+        }
+
+        void FillResults(NetworkRace race)
+        {
+            resultPlayers.Clear();
+            foreach (NetworkPlayer player in race.Players)
+                if (player != null && player.IsSpawned) resultPlayers.Add(player);
+            resultPlayers.Sort(race.ComparePlacement);
+            countText.text = "PUESTO · TIEMPO · CAÍDAS · CRISTALES · PUNTOS";
+            countText.fontSize = 13f;
+            for (int i = 0; i < playerTexts.Length; i++)
+            {
+                bool used = i < resultPlayers.Count;
+                playerTexts[i].gameObject.SetActive(used);
+                if (!used) continue;
+                NetworkPlayer player = resultPlayers[i];
+                float time = player.Finished.Value ? player.FinishTime.Value : player.EliminationTime.Value;
+                playerTexts[i].text = $"{i + 1}.º {player.Label} · {time:0.0} s · {player.Falls.Value} caídas · {player.Crystals.Value} crist. · {player.Crystals.Value * 100} pts"
+                    + (player.Finished.Value ? "" : " · eliminado");
+                playerTexts[i].fontSize = i == 0 ? 14f : 12f;
+                playerTexts[i].color = i == 0 ? new Color32(255, 215, 110, 255)
+                    : i == 1 ? new Color32(205, 222, 232, 255)
+                    : i == 2 ? new Color32(226, 161, 111, 255) : player.RaceColor;
             }
         }
 
@@ -207,6 +215,7 @@ namespace HeatRise.UI
             }
 
             countText.text = race.Players.Count + " / 4 conectados";
+            countText.fontSize = 15f;
             for (int i = 0; i < playerTexts.Length; i++)
             {
                 bool used = i < race.Players.Count;
@@ -215,6 +224,7 @@ namespace HeatRise.UI
                 NetworkPlayer player = race.Players[i];
                 playerTexts[i].text = player.Label + (player.IsOwner ? " (vos)" : "")
                     + (player.Ready.Value ? " - Listo" : " - Esperando");
+                playerTexts[i].fontSize = 16f;
                 playerTexts[i].color = player.RaceColor;
             }
 

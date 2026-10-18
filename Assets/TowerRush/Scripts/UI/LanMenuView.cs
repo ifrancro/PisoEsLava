@@ -92,6 +92,17 @@ namespace HeatRise.UI
             joinButton.onClick.AddListener(ToggleJoin);
             connectButton.onClick.AddListener(OnConnectPressed);
             ipInput.onValueChanged.AddListener(OnIpChanged);
+            statusDot.gameObject.SetActive(false);
+            HorizontalLayoutGroup inputRow = ipInput.GetComponentInParent<HorizontalLayoutGroup>();
+            inputRow.childAlignment = TextAnchor.MiddleCenter;
+            inputRow.childForceExpandWidth = false;
+            LayoutElement inputLayout = ipInput.GetComponent<LayoutElement>();
+            inputLayout.preferredWidth = 560f;
+            inputLayout.flexibleWidth = 0f;
+            joinHelpText.alignment = TextAlignmentOptions.Center;
+            hintText.alignment = TextAlignmentOptions.Center;
+            ipInput.textComponent.alignment = TextAlignmentOptions.Center;
+            ((TMP_Text)ipInput.placeholder).alignment = TextAlignmentOptions.Center;
         }
 
         void OnEnable()
@@ -215,7 +226,7 @@ namespace HeatRise.UI
             subtitleText.text = internet ? "2 a 4 jugadores desde cualquier red" : "2 a 4 jugadores en la misma red";
             hostHelpText.text = internet ? "Crea la partida y comparte el código." : "Comparte tu IP con los demás jugadores.";
             joinHelpText.text = internet ? "Escribe el código que compartió el host." : "Escribe la IP de la computadora host.";
-            portText.text = internet ? "CONEXIÓN ONLINE POR CÓDIGO" : "Puerto UDP: " + lanMenu.port;
+            portText.text = internet ? "" : "Puerto UDP: " + lanMenu.port;
             ipInput.characterLimit = internet ? 6 : 45;
             ((TMP_Text)ipInput.placeholder).text = internet ? "ABC123" : "192.168.1.20";
             ipInput.text = "";

@@ -362,11 +362,11 @@ namespace HeatRise.EditorTools
             Part(template.transform, "Boton_Guardar", PrimitiveType.Cylinder, new Vector3(0f, 0.05f, 0f), new Vector3(1.4f, 0.015f, 1.4f), green, false);
             for (int side = -1; side <= 1; side += 2)
                 Part(template.transform, "Borde_Luminoso", PrimitiveType.Cube, new Vector3(side * 2.42f, 0.025f, 0f), new Vector3(0.1f, 0.05f, 4.3f), green, false);
-            TextMesh label = new GameObject("Indicacion_F").AddComponent<TextMesh>();
+            TextMesh label = new GameObject("Indicacion_Checkpoint").AddComponent<TextMesh>();
             label.transform.SetParent(template.transform, false);
             label.transform.localPosition = new Vector3(0f, 1.4f, 1.7f);
             label.transform.localRotation = Quaternion.identity;
-            label.text = "CHECKPOINT\nF - GUARDAR";
+            label.text = "CHECKPOINT\nPISÁ PARA GUARDAR";
             label.anchor = TextAnchor.MiddleCenter;
             label.alignment = TextAlignment.Center;
             label.fontSize = 48;

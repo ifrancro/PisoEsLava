@@ -98678,6 +98678,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 0}
   lava: {fileID: 10135}
+  controlsPanelSprite: {fileID: 21300000, guid: 79c57868cebfd1b4d83b2656f7022d45, type: 3}
+  controlsBorderSprite: {fileID: 21300000, guid: acbf85c3311ab5c40bcf94d641b9ebd5, type: 3}
+  controlsFont: {fileID: 12800000, guid: f367ff6114bfbef4196ff3afffda4b8a, type: 3}
   startHeight: 2
   finishHeight: 55.76
   showHud: 1
@@ -99091,8 +99094,7 @@ MonoBehaviour:
     de 8 segundos y acelera con el tiempo.\n\n<b><color=#B8FA82>CONTROLES</color></b>\nWASD
     / Flechas: moverse seg\xFAn la c\xE1mara.\nEspacio: saltar; un salto por pulsaci\xF3n.\nQ:
     peque\xF1o, m\xE1s r\xE1pido y capaz de cruzar conductos.\nE: gigante; F empuja
-    bloques cercanos.\nR: volver al tama\xF1o normal.\nF: guardar checkpoint sobre
-    su bot\xF3n verde.\nRat\xF3n: arrastrar con bot\xF3n izquierdo, derecho o central
+    bloques cercanos.\nR: volver al tama\xF1o normal.\nRat\xF3n: arrastrar con bot\xF3n izquierdo, derecho o central
     para girar c\xE1mara.\nRueda: acercar o alejar.\nC: mirar hacia la siguiente
     plataforma.\nEsc / P: abrir pausa; Enter: continuar en modo solo.\n\n<b><color=#B8FA82>TRANSFORMACIONES</color></b>\nPeque\xF1o
     y gigante duran 7 segundos. Recargan durante 4 segundos al terminar. Peque\xF1o
@@ -99103,10 +99105,10 @@ MonoBehaviour:
     5 segundos despu\xE9s.\nCian: plataformas m\xF3viles; calcul\xE1 el salto y viaj\xE1
     sobre ellas.\nRojo: barras, martillos y prensas; evit\xE1 sus golpes.\nVioleta:
     bloques pesados; us\xE1 E y luego F para abrir paso.\nVerde: checkpoints y meta.\n\n<b><color=#B8FA82>CHECKPOINTS
-    Y CA\xCDDAS</color></b>\nHay 3 bases exteriores junto al recorrido. Parate sobre
-    el bot\xF3n verde y puls\xE1 F para guardar. Cada jugador guarda su propio avance
-    durante esa ronda. Caer por debajo de la plataforma desde la que saliste o tocar
-    lava te devuelve al \xFAltimo checkpoint, si todav\xEDa est\xE1 por encima de
+    Y CA\xCDDAS</color></b>\nHay 3 bases exteriores junto al recorrido. Al pisar
+    el bot\xF3n verde, el checkpoint se guarda solo. Cada jugador guarda su propio avance
+    durante esa ronda. Si ca\xE9s y toc\xE1s la lava, o si la lava sube hasta vos,
+    volv\xE9s al \xFAltimo checkpoint si todav\xEDa est\xE1 por encima de
     la lava. Sin un checkpoint seguro, termina tu intento.\n\n<b><color=#B8FA82>CARRERA
     ONLINE \xB7 2 A 4 JUGADORES</color></b>\nUsen la misma versi\xF3n del juego.
     En Internet, un jugador crea partida y comparte el c\xF3digo; los dem\xE1s lo

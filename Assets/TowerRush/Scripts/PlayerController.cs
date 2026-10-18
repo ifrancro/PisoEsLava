@@ -30,9 +30,9 @@ namespace HeatRise
         public float Radius => controller.radius;
         public int CheckpointOrder => checkpoint != null ? checkpoint.order : 0;
         public bool Simulates => networkPlayer == null || networkPlayer.IsSpawned
-            && networkPlayer.IsOwner && networkPlayer.Alive.Value;
+            && networkPlayer.IsOwner && networkPlayer.Alive.Value && !networkPlayer.Finished.Value;
         public bool IsLocal => networkPlayer == null || networkPlayer.IsOwner;
-        public bool IsAlive => networkPlayer == null || networkPlayer.Alive.Value;
+        public bool IsAlive => networkPlayer == null || networkPlayer.Alive.Value && !networkPlayer.Finished.Value;
 
         readonly Collider[] overlaps = new Collider[32];
         CharacterController controller;
@@ -51,6 +51,25 @@ namespace HeatRise
         float jumpBuffer;
         bool grounded = true;
         bool modelVisible = true;
+        readonly VisualRig[] visualRigs = new VisualRig[3];
+        Vector3 previousVisualPosition;
+        float visualRun;
+        float visualAir;
+        float visualLanding;
+        float visualPhase;
+        float visualAppearance;
+        bool wasVisuallyAirborne;
+
+        sealed class VisualRig
+        {
+            public Transform root;
+            public Transform leftArm;
+            public Transform rightArm;
+            public Transform leftLeg;
+            public Transform rightLeg;
+            public Vector3 position;
+            public Vector3 scale;
+        }
 
         void Awake()
         {
@@ -61,8 +80,92 @@ namespace HeatRise
             baseRadius = controller.radius;
             GroundHeight = transform.position.y;
             modelScale = model != null ? model.localScale : Vector3.one;
+            visualRigs[0] = BuildVisualRig(model);
+            visualRigs[1] = BuildVisualRig(smallModel);
+            visualRigs[2] = BuildVisualRig(largeModel);
+            RestartAnimation();
             SetModelVisible(true);
             if (view == null && Camera.main != null) view = Camera.main.transform;
+        }
+
+        void LateUpdate()
+        {
+            float dt = Time.deltaTime;
+            Vector3 position = transform.position;
+            Vector3 displacement = position - previousVisualPosition;
+            previousVisualPosition = position;
+            if (dt <= 0f || networkPlayer != null && !networkPlayer.Alive.Value) return;
+
+            VisualRig rig = visualRigs[(int)CurrentSize];
+            if (rig == null || rig.leftArm == null || rig.rightArm == null
+                || rig.leftLeg == null || rig.rightLeg == null) return;
+            float horizontalSpeed = new Vector2(displacement.x, displacement.z).magnitude / dt;
+            float targetRun = GameManager.Playing && IsAlive
+                ? Mathf.InverseLerp(0.35f, moveSpeed, horizontalSpeed) : 0f;
+            visualRun = Mathf.MoveTowards(visualRun, targetRun, 7f * dt);
+            bool airborne = GameManager.Playing && IsAlive && (IsLocal ? !grounded
+                : !Physics.Raycast(position + Vector3.up * 0.15f, Vector3.down,
+                    0.15f + Mathf.Max(0.16f, Height * 0.08f), obstacleMask,
+                    QueryTriggerInteraction.Ignore));
+            if (wasVisuallyAirborne && !airborne && visualAir > 0.35f) visualLanding = 1f;
+            wasVisuallyAirborne = airborne;
+            visualLanding = Mathf.MoveTowards(visualLanding, 0f, 5f * dt);
+            visualAir = Mathf.MoveTowards(visualAir, airborne ? 1f : 0f, 8f * dt);
+            visualPhase += horizontalSpeed * 1.8f * dt;
+            visualAppearance = Mathf.Min(1f, visualAppearance + dt / 0.45f);
+
+            float swing = Mathf.Sin(visualPhase) * 38f * visualRun;
+            float jump = displacement.y >= 0f ? -35f : 20f;
+            rig.leftLeg.localRotation = Quaternion.Euler(Mathf.Lerp(swing, jump * 0.55f, visualAir), 0f, 0f);
+            rig.rightLeg.localRotation = Quaternion.Euler(Mathf.Lerp(-swing, jump, visualAir), 0f, 0f);
+            rig.leftArm.localRotation = Quaternion.Euler(Mathf.Lerp(-swing * 0.8f, -45f, visualAir), 0f, 0f);
+            rig.rightArm.localRotation = Quaternion.Euler(Mathf.Lerp(swing * 0.8f, -45f, visualAir), 0f, 0f);
+
+            float entrance = 1f - Mathf.Pow(1f - visualAppearance, 3f);
+            float bob = Mathf.Abs(Mathf.Sin(visualPhase)) * 0.045f * visualRun * (1f - visualAir)
+                + Mathf.Sin(Time.time * 2.6f) * 0.012f * (1f - visualRun) * (1f - visualAir);
+            rig.root.localPosition = rig.position + Vector3.up * (bob - 0.3f * (1f - entrance)
+                - 0.08f * visualLanding);
+            float size = 0.7f + 0.3f * entrance;
+            rig.root.localScale = Vector3.Scale(rig.scale,
+                new Vector3(size * (1f + 0.08f * visualLanding),
+                    size * (1f - 0.12f * visualLanding),
+                    size * (1f + 0.08f * visualLanding)));
+        }
+
+        static VisualRig BuildVisualRig(Transform root)
+        {
+            if (root == null) return null;
+            return new VisualRig
+            {
+                root = root,
+                position = root.localPosition,
+                scale = root.localScale,
+                leftArm = MakePivot(root, "Brazo_Izq", "Mano_Izq", 1.08f),
+                rightArm = MakePivot(root, "Brazo_Der", "Mano_Der", 1.08f),
+                leftLeg = MakePivot(root, "Pierna_Izq", "Bota_Izq", 0.55f),
+                rightLeg = MakePivot(root, "Pierna_Der", "Bota_Der", 0.55f)
+            };
+        }
+
+        static Transform MakePivot(Transform root, string body, string end, float height)
+        {
+            Transform first = root.Find(body);
+            Transform second = root.Find(end);
+            if (first == null || second == null) return null;
+            Transform pivot = new GameObject(body + "_Pivot").transform;
+            pivot.SetParent(root, false);
+            pivot.localPosition = new Vector3(first.localPosition.x, height, first.localPosition.z);
+            first.SetParent(pivot, true);
+            second.SetParent(pivot, true);
+            return pivot;
+        }
+
+        public void RestartAnimation()
+        {
+            previousVisualPosition = transform.position;
+            visualRun = visualAir = visualLanding = visualPhase = visualAppearance = 0f;
+            wasVisuallyAirborne = false;
         }
 
         void Update()
@@ -111,16 +214,12 @@ namespace HeatRise
             Vector3 movement = direction * speed + pushVelocity + Vector3.up * verticalSpeed;
             CollisionFlags flags = controller.Move(movement * dt + carry);
 
-            if (transform.position.y < GroundHeight - fallTolerance)
-            {
-                Eliminate(1, "Te caiste. No hay un checkpoint disponible.");
-                return;
-            }
-
             if (GameManager.Instance != null && GameManager.Instance.lava != null
                 && transform.position.y <= GameManager.Instance.lava.SurfaceHeight)
             {
-                Eliminate(2, "La lava te alcanzo.");
+                bool fell = transform.position.y < GroundHeight - fallTolerance;
+                Eliminate(fell ? (byte)1 : (byte)2,
+                    fell ? "Caíste a la lava. No hay un checkpoint disponible." : "La lava te alcanzó.");
                 return;
             }
 
@@ -157,6 +256,7 @@ namespace HeatRise
 
         void Eliminate(byte cause, string text)
         {
+            if (cause == 1) networkPlayer?.RecordFall();
             if (TryRespawn())
             {
                 if (networkPlayer == null)
@@ -184,8 +284,8 @@ namespace HeatRise
             if (value.GetRespawnPoint(this) == null) return;
             checkpoint = value;
             networkPlayer?.SaveCheckpointRpc(value.order);
-            Notify("Checkpoint guardado.");
             PersistentMusic.Instance?.ReproducirCheckpoint();
+            GameManager.Instance?.ShowMessage("CHECKPOINT GUARDADO");
         }
 
         bool TryRespawn()
@@ -267,8 +367,11 @@ namespace HeatRise
             controller.skinWidth = Mathf.Min(0.025f, radius * 0.1f);
             controller.stepOffset = Mathf.Min(0.1f, height * 0.15f);
             if (model != null)
+            {
                 model.localScale = modelScale * (size == Size.Small && smallModel == null
                     || size == Size.Large && largeModel == null ? scale : 1f);
+                if (visualRigs[0] != null) visualRigs[0].scale = model.localScale;
+            }
             SetModelVisible(modelVisible);
             playerCollision?.RefreshPairs();
 
@@ -309,6 +412,7 @@ namespace HeatRise
             support = nextSupport = null;
             GroundHeight = position.y;
             ApplySize(Size.Normal);
+            RestartAnimation();
             controller.enabled = Simulates;
             playerCollision?.RefreshPairs();
         }
