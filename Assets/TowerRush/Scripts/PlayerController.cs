@@ -1,4 +1,5 @@
 using UnityEngine;
+using HeatRise.Characters;
 
 namespace HeatRise
 {
@@ -20,6 +21,12 @@ namespace HeatRise
         public float cooldown = 4f;
         public float fallTolerance = 0.36f;
         public LayerMask obstacleMask = Physics.DefaultRaycastLayers;
+        [SerializeField] MaleCharacterView characterView;
+
+        public MaleCharacterView CharacterView => characterView;
+        public bool IsGrounded => grounded;
+        public float VerticalSpeed => verticalSpeed;
+        public float HorizontalSpeed { get; private set; }
 
         public Size CurrentSize { get; private set; }
         public float AbilityRemaining { get; private set; }
@@ -59,6 +66,7 @@ namespace HeatRise
         float visualPhase;
         float visualAppearance;
         bool wasVisuallyAirborne;
+        bool celebrating;
 
         sealed class VisualRig
         {
@@ -80,9 +88,13 @@ namespace HeatRise
             baseRadius = controller.radius;
             GroundHeight = transform.position.y;
             modelScale = model != null ? model.localScale : Vector3.one;
-            visualRigs[0] = BuildVisualRig(model);
-            visualRigs[1] = BuildVisualRig(smallModel);
-            visualRigs[2] = BuildVisualRig(largeModel);
+            if (characterView == null && model != null) characterView = model.GetComponentInChildren<MaleCharacterView>(true);
+            if (characterView == null)
+            {
+                visualRigs[0] = BuildVisualRig(model);
+                visualRigs[1] = BuildVisualRig(smallModel);
+                visualRigs[2] = BuildVisualRig(largeModel);
+            }
             RestartAnimation();
             SetModelVisible(true);
             if (view == null && Camera.main != null) view = Camera.main.transform;
@@ -90,6 +102,8 @@ namespace HeatRise
 
         void LateUpdate()
         {
+            // Animator owns all bones and squash/stretch of the new character.
+            if (characterView != null) return;
             float dt = Time.deltaTime;
             Vector3 position = transform.position;
             Vector3 displacement = position - previousVisualPosition;
@@ -163,6 +177,9 @@ namespace HeatRise
 
         public void RestartAnimation()
         {
+            celebrating = false;
+            HorizontalSpeed = 0f;
+            characterView?.ResetPose();
             previousVisualPosition = transform.position;
             visualRun = visualAir = visualLanding = visualPhase = visualAppearance = 0f;
             wasVisuallyAirborne = false;
@@ -170,10 +187,20 @@ namespace HeatRise
 
         void Update()
         {
-            if (!Simulates || !GameManager.Playing) return;
-            float dt = Time.deltaTime;
-            Physics.SyncTransforms();
+            if (!Simulates || !GameManager.Playing)
+            {
+                if (IsLocal && !celebrating) characterView?.SetLocomotion(0f, grounded, verticalSpeed);
+                return;
+            }
             byte actions = networkPlayer != null ? networkPlayer.ConsumeActions() : ReadActions();
+            Vector3 direction = networkPlayer != null ? networkPlayer.Direction : ReadDirection();
+            SimulateMovement(Time.deltaTime, direction, actions);
+        }
+
+        void SimulateMovement(float dt, Vector3 direction, byte actions)
+        {
+            if (dt <= 0f) return;
+            Physics.SyncTransforms();
             hitCooldown = Mathf.Max(0f, hitCooldown - dt);
             jumpBuffer = (actions & 1) != 0 ? 0.12f : Mathf.Max(0f, jumpBuffer - dt);
             SmallCooldown = Mathf.Max(0f, SmallCooldown - dt);
@@ -197,7 +224,6 @@ namespace HeatRise
                 GroundHeight += carry.y;
             }
 
-            Vector3 direction = networkPlayer != null ? networkPlayer.Direction : ReadDirection();
             float speed = moveSpeed * (CurrentSize == Size.Small ? 1.35f : CurrentSize == Size.Large ? 0.74f : 1f);
 
             if (grounded && verticalSpeed < 0f) verticalSpeed = -2f;
@@ -212,7 +238,10 @@ namespace HeatRise
             verticalSpeed += gravity * dt;
             nextSupport = null;
             Vector3 movement = direction * speed + pushVelocity + Vector3.up * verticalSpeed;
+            Vector3 beforeMove = transform.position;
             CollisionFlags flags = controller.Move(movement * dt + carry);
+            Vector3 selfMovement = transform.position - beforeMove - carry;
+            HorizontalSpeed = new Vector2(selfMovement.x, selfMovement.z).magnitude / dt;
 
             if (GameManager.Instance != null && GameManager.Instance.lava != null
                 && transform.position.y <= GameManager.Instance.lava.SurfaceHeight)
@@ -233,6 +262,8 @@ namespace HeatRise
                 if (support != null) supportLocalPoint = support.InverseTransformPoint(transform.position);
             }
             else support = null;
+
+            characterView?.SetLocomotion(HorizontalSpeed / speed, grounded, verticalSpeed);
 
             pushVelocity = Vector3.MoveTowards(pushVelocity, Vector3.zero, 12f * dt);
             if (direction.sqrMagnitude > 0.01f)
@@ -375,6 +406,13 @@ namespace HeatRise
             SetModelVisible(modelVisible);
             playerCollision?.RefreshPairs();
 
+            if (previousSize != size && IsLocal && characterView != null)
+            {
+                if (size == Size.Small) characterView.PlayShrink();
+                else if (size == Size.Large) characterView.PlayGrow();
+                else characterView.PlayReturnNormal();
+            }
+
             if (IsLocal && previousSize != size)
             {
                 if (size == Size.Small)
@@ -455,6 +493,14 @@ namespace HeatRise
             if (direction.sqrMagnitude < 0.01f) direction = -transform.forward;
             pushVelocity = direction.normalized * strength * (CurrentSize == Size.Large ? 0.55f : 1f);
             hitCooldown = 0.65f;
+            characterView?.PlayHit();
+        }
+
+        public void Celebrate()
+        {
+            if (celebrating) return;
+            celebrating = true;
+            if (IsLocal) characterView?.PlayVictory();
         }
 
         void OnControllerColliderHit(ControllerColliderHit hit)

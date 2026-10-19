@@ -241,6 +241,12 @@ namespace HeatRise
 
         void SlotChanged(int previous, int current)
         {
+            if (Player.CharacterView != null)
+            {
+                Player.CharacterView.SetClothingColors(RaceColor,
+                    Color.Lerp(RaceColor, new Color(0.04f, 0.07f, 0.10f), 0.65f));
+                return;
+            }
             foreach (Renderer modelRenderer in modelRenderers)
             {
                 modelRenderer.GetPropertyBlock(modelProperties);
@@ -271,6 +277,8 @@ namespace HeatRise
         void FinishedChanged(bool previous, bool current)
         {
             controller.enabled = IsOwner && Alive.Value && !current;
+            if (current) Player.Celebrate();
+            else if (previous) Player.RestartAnimation();
         }
     }
 }

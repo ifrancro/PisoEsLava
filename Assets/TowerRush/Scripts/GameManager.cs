@@ -197,6 +197,7 @@ namespace HeatRise
             won = true;
             bestHeight = finishHeight;
             reason = "Llegaste a la cima antes que la lava.";
+            player?.Celebrate();
             PersistentMusic.Instance?.ReproducirVictoria();
             Time.timeScale = 0f;
         }

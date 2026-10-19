@@ -1,0 +1,187 @@
+{
+  "rig": "HR_Male_Rig",
+  "bones": 24,
+  "units": "metres",
+  "mesh_count": 6,
+  "meshes": [
+    {
+      "name": "Eyes",
+      "vertices": 700,
+      "triangles": 1360,
+      "quads": 560,
+      "ngons": 0,
+      "nonmanifold_edges": 0,
+      "loose_vertices": 0,
+      "unweighted": 0,
+      "weight_sum_errors": 0,
+      "uv_outside_0_1": 0,
+      "zero_area_uv_triangles": 0,
+      "seam_edges": 504,
+      "materials": [
+        "HR_Hair",
+        "HR_EyeWhite",
+        "HR_Iris",
+        "HR_Pupil"
+      ]
+    },
+    {
+      "name": "Face",
+      "vertices": 156,
+      "triangles": 288,
+      "quads": 114,
+      "ngons": 0,
+      "nonmanifold_edges": 0,
+      "loose_vertices": 0,
+      "unweighted": 0,
+      "weight_sum_errors": 0,
+      "uv_outside_0_1": 0,
+      "zero_area_uv_triangles": 0,
+      "seam_edges": 201,
+      "materials": [
+        "HR_Skin",
+        "HR_Mouth",
+        "HR_EyeWhite"
+      ]
+    },
+    {
+      "name": "Hair_and_Beard",
+      "vertices": 200,
+      "triangles": 356,
+      "quads": 134,
+      "ngons": 0,
+      "nonmanifold_edges": 0,
+      "loose_vertices": 0,
+      "unweighted": 0,
+      "weight_sum_errors": 0,
+      "uv_outside_0_1": 0,
+      "zero_area_uv_triangles": 0,
+      "seam_edges": 349,
+      "materials": [
+        "HR_Hair"
+      ]
+    },
+    {
+      "name": "Hat",
+      "vertices": 216,
+      "triangles": 424,
+      "quads": 168,
+      "ngons": 0,
+      "nonmanifold_edges": 0,
+      "loose_vertices": 0,
+      "unweighted": 0,
+      "weight_sum_errors": 0,
+      "uv_outside_0_1": 0,
+      "zero_area_uv_triangles": 0,
+      "seam_edges": 103,
+      "materials": [
+        "HR_Hat",
+        "HR_HatBand"
+      ]
+    },
+    {
+      "name": "Outfit",
+      "vertices": 494,
+      "triangles": 920,
+      "quads": 372,
+      "ngons": 0,
+      "nonmanifold_edges": 0,
+      "loose_vertices": 0,
+      "unweighted": 0,
+      "weight_sum_errors": 0,
+      "uv_outside_0_1": 0,
+      "zero_area_uv_triangles": 0,
+      "seam_edges": 494,
+      "materials": [
+        "HR_Clothing_Shirt",
+        "HR_Clothing_Pants",
+        "HR_Buttons",
+        "HR_Boots",
+        "HR_Soles"
+      ]
+    },
+    {
+      "name": "Skin_Body",
+      "vertices": 294,
+      "triangles": 556,
+      "quads": 227,
+      "ngons": 0,
+      "nonmanifold_edges": 0,
+      "loose_vertices": 0,
+      "unweighted": 0,
+      "weight_sum_errors": 0,
+      "uv_outside_0_1": 0,
+      "zero_area_uv_triangles": 0,
+      "seam_edges": 257,
+      "materials": [
+        "HR_Skin"
+      ]
+    }
+  ],
+  "clips": {
+    "Idle": {
+      "first_frame": 1,
+      "last_frame": 60,
+      "fps": 30,
+      "loop": true
+    },
+    "Run": {
+      "first_frame": 1,
+      "last_frame": 24,
+      "fps": 30,
+      "loop": true
+    },
+    "Jump": {
+      "first_frame": 1,
+      "last_frame": 24,
+      "fps": 30,
+      "loop": false
+    },
+    "Fall": {
+      "first_frame": 1,
+      "last_frame": 40,
+      "fps": 30,
+      "loop": true
+    },
+    "Land": {
+      "first_frame": 1,
+      "last_frame": 16,
+      "fps": 30,
+      "loop": false
+    },
+    "Grow": {
+      "first_frame": 1,
+      "last_frame": 36,
+      "fps": 30,
+      "loop": false
+    },
+    "Shrink": {
+      "first_frame": 1,
+      "last_frame": 30,
+      "fps": 30,
+      "loop": false
+    },
+    "ReturnNormal": {
+      "first_frame": 1,
+      "last_frame": 30,
+      "fps": 30,
+      "loop": false
+    },
+    "Hit": {
+      "first_frame": 1,
+      "last_frame": 20,
+      "fps": 30,
+      "loop": false
+    },
+    "Victory": {
+      "first_frame": 1,
+      "last_frame": 72,
+      "fps": 30,
+      "loop": true
+    }
+  },
+  "errors": [],
+  "triangles": 3904,
+  "vertices": 2060,
+  "fbx": "C:\\Users\\ASUS TUF\\Documents\\6 Semestre\\Realidad Virtual\\pisoEsLava\\PisoEsLava\\Assets\\TowerRush\\Models\\MaleCharacter\\MaleCharacter.fbx",
+  "fbx_bytes": 2304108
+}

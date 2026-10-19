@@ -31,7 +31,7 @@ namespace HeatRise
         public string RelayConnection => encryptOnline ? "dtls" : "udp";
 
         public static string VersionLabel => "EL PISO ES LAVA";
-        const string Protocol = "HeatRise-LAN-3.1";
+        const string Protocol = "HeatRise-LAN-3.2";
         public event Action OnConnected;
         public bool Connecting => connecting;
         public bool Leaving => leaving;

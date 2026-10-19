@@ -165,15 +165,16 @@ namespace HeatRise.Editor
         {
             Require(player != null && player.GetComponent<CharacterController>() != null
                 && player.GetComponent<PlayerCollision>() != null, "Player controller/collision missing.");
-            Require(player.model != null && player.smallModel != null && player.largeModel != null, "All three player models required.");
-            foreach (Transform model in new[] { player.model, player.smallModel, player.largeModel })
+            bool singleRig = player.model != null && player.model.GetComponentInChildren<HeatRise.Characters.MaleCharacterView>(true) != null;
+            Require(player.model != null && (singleRig || player.smallModel != null && player.largeModel != null), "Player visual models missing.");
+            foreach (Transform model in new[] { player.model, player.smallModel, player.largeModel }.Where(m => m != null))
             {
                 Require(model.IsChildOf(player.transform), "Model must belong to player.");
                 Require(model.GetComponentsInChildren<Renderer>(true).Length > 0, "Player model has no renderer.");
                 Require(model.GetComponentsInChildren<Collider>(true).All(c => !c.enabled), "Visual model colliders must be disabled.");
             }
-            Require(player.model.gameObject.activeSelf && !player.smallModel.gameObject.activeSelf
-                && !player.largeModel.gameObject.activeSelf, "Normal model must be initial visible form.");
+            Require(player.model.gameObject.activeSelf && (player.smallModel == null || !player.smallModel.gameObject.activeSelf)
+                && (player.largeModel == null || !player.largeModel.gameObject.activeSelf), "Normal model must be initial visible form.");
             Require(!scenePlayer || player.view != null, "Solo view reference missing.");
         }
 
